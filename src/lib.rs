@@ -1,4 +1,3 @@
-
 /// Represents a Zsh prompt sequence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ZshSequence {
@@ -62,7 +61,7 @@ pub enum NamedColor {
     LightBlue,
     LightMagenta,
     LightCyan,
-    LightWhite, // Often Bright White
+    LightWhite,  // Often Bright White
     Code256(u8), // 0-255
 }
 
@@ -105,8 +104,12 @@ impl std::fmt::Display for ZshSequence {
             ZshSequence::ForegroundColorEnd => write!(f, "%f"),
             ZshSequence::BackgroundColor(color) => write!(f, "%K{{{}}}", color.to_zsh_string()),
             ZshSequence::BackgroundColorEnd => write!(f, "%k"),
-            ZshSequence::TrueColorForegroundColor(r, g, b) => write!(f, "%{{\x1b[38;2;{};{};{}m%}}", r, g, b),
-            ZshSequence::TrueColorBackgroundColor(r, g, b) => write!(f, "%{{\x1b[48;2;{};{};{}m%}}", r, g, b),
+            ZshSequence::TrueColorForegroundColor(r, g, b) => {
+                write!(f, "%{{\x1b[38;2;{};{};{}m%}}", r, g, b)
+            }
+            ZshSequence::TrueColorBackgroundColor(r, g, b) => {
+                write!(f, "%{{\x1b[48;2;{};{};{}m%}}", r, g, b)
+            }
             ZshSequence::ResetStyles => write!(f, "%{{\x1b[0m%}}"),
             ZshSequence::Username => write!(f, "%n"),
             ZshSequence::HostnameShort => write!(f, "%m"),
@@ -115,6 +118,77 @@ impl std::fmt::Display for ZshSequence {
             ZshSequence::PrivilegedIndicator => write!(f, "%#"),
             ZshSequence::Literal(s) => write!(f, "{}", s),
         }
+    }
+}
+pub trait ColoredZshPrompt {
+    fn bold(self) -> String;
+    fn underline(self) -> String;
+    fn red(self) -> String;
+    fn green(self) -> String;
+    fn yellow(self) -> String;
+    fn blue(self) -> String;
+    fn white(self) -> String;
+    fn on_yellow(self) -> String;
+    fn on_blue(self) -> String;
+    fn rgb_color(self, r: u8, g: u8, b: u8) -> String;
+    fn on_rgb_color(self, r: u8, g: u8, b: u8) -> String;
+}
+
+impl<T: AsRef<str>> ColoredZshPrompt for T {
+    fn bold(self) -> String {
+        format!("%B{}%b", self.as_ref())
+    }
+
+    fn underline(self) -> String {
+        format!("%U{}%u", self.as_ref())
+    }
+
+    fn red(self) -> String {
+        format!("%F{{red}}{}%f", self.as_ref())
+    }
+
+    fn green(self) -> String {
+        format!("%F{{green}}{}%f", self.as_ref())
+    }
+
+    fn yellow(self) -> String {
+        format!("%F{{yellow}}{}%f", self.as_ref())
+    }
+
+    fn blue(self) -> String {
+        format!("%F{{blue}}{}%f", self.as_ref())
+    }
+
+    fn white(self) -> String {
+        format!("%F{{white}}{}%f", self.as_ref())
+    }
+
+    fn on_yellow(self) -> String {
+        format!("%K{{yellow}}{}%k", self.as_ref())
+    }
+
+    fn on_blue(self) -> String {
+        format!("%K{{blue}}{}%k", self.as_ref())
+    }
+
+    fn rgb_color(self, r: u8, g: u8, b: u8) -> String {
+        format!(
+            "%{{\x1b[38;2;{};{};{}m%}}{}%{{\x1b[0m%}}",
+            r,
+            g,
+            b,
+            self.as_ref()
+        )
+    }
+
+    fn on_rgb_color(self, r: u8, g: u8, b: u8) -> String {
+        format!(
+            "%{{\x1b[48;2;{};{};{}m%}}{}%{{\x1b[0m%}}",
+            r,
+            g,
+            b,
+            self.as_ref()
+        )
     }
 }
 
@@ -157,12 +231,14 @@ impl ZshPromptBuilder {
     }
 
     pub fn rgb_color(mut self, r: u8, g: u8, b: u8) -> Self {
-        self.sequences.push(ZshSequence::TrueColorForegroundColor(r, g, b));
+        self.sequences
+            .push(ZshSequence::TrueColorForegroundColor(r, g, b));
         self
     }
 
     pub fn rgb_color_bg(mut self, r: u8, g: u8, b: u8) -> Self {
-        self.sequences.push(ZshSequence::TrueColorBackgroundColor(r, g, b));
+        self.sequences
+            .push(ZshSequence::TrueColorBackgroundColor(r, g, b));
         self
     }
 
@@ -267,26 +343,44 @@ mod tests {
 
     #[test]
     fn test_foreground_color_sequence() {
-        assert_eq!(ZshSequence::ForegroundColor(NamedColor::Red).to_string(), "%F{red}");
-        assert_eq!(ZshSequence::ForegroundColor(NamedColor::Code256(123)).to_string(), "%F{123}");
+        assert_eq!(
+            ZshSequence::ForegroundColor(NamedColor::Red).to_string(),
+            "%F{red}"
+        );
+        assert_eq!(
+            ZshSequence::ForegroundColor(NamedColor::Code256(123)).to_string(),
+            "%F{123}"
+        );
         assert_eq!(ZshSequence::ForegroundColorEnd.to_string(), "%f");
     }
 
     #[test]
     fn test_background_color_sequence() {
-        assert_eq!(ZshSequence::BackgroundColor(NamedColor::Blue).to_string(), "%K{blue}");
-        assert_eq!(ZshSequence::BackgroundColor(NamedColor::Code256(200)).to_string(), "%K{200}");
+        assert_eq!(
+            ZshSequence::BackgroundColor(NamedColor::Blue).to_string(),
+            "%K{blue}"
+        );
+        assert_eq!(
+            ZshSequence::BackgroundColor(NamedColor::Code256(200)).to_string(),
+            "%K{200}"
+        );
         assert_eq!(ZshSequence::BackgroundColorEnd.to_string(), "%k");
     }
 
     #[test]
     fn test_true_color_foreground_sequence() {
-        assert_eq!(ZshSequence::TrueColorForegroundColor(255, 0, 0).to_string(), "%{\x1b[38;2;255;0;0m%}");
+        assert_eq!(
+            ZshSequence::TrueColorForegroundColor(255, 0, 0).to_string(),
+            "%{\x1b[38;2;255;0;0m%}"
+        );
     }
 
     #[test]
     fn test_true_color_background_sequence() {
-        assert_eq!(ZshSequence::TrueColorBackgroundColor(0, 0, 255).to_string(), "%{\x1b[48;2;0;0;255m%}");
+        assert_eq!(
+            ZshSequence::TrueColorBackgroundColor(0, 0, 255).to_string(),
+            "%{\x1b[48;2;0;0;255m%}"
+        );
     }
 
     #[test]
@@ -321,7 +415,10 @@ mod tests {
 
     #[test]
     fn test_literal_sequence() {
-        assert_eq!(ZshSequence::Literal("hello".to_string()).to_string(), "hello");
+        assert_eq!(
+            ZshSequence::Literal("hello".to_string()).to_string(),
+            "hello"
+        );
     }
 
     #[test]
@@ -371,7 +468,10 @@ mod tests {
             .text("Hello, True Color!")
             .reset_styles()
             .build();
-        assert_eq!(prompt, "%{\x1b[38;2;255;100;0m%}Hello, True Color!%{\x1b[0m%}");
+        assert_eq!(
+            prompt,
+            "%{\x1b[38;2;255;100;0m%}Hello, True Color!%{\x1b[0m%}"
+        );
     }
 
     #[test]
