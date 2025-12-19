@@ -124,10 +124,29 @@ impl ZshPromptBuilder {
         self.sequences.push(ZshSequence::Newline);
         self
     }
+
     pub fn build(&self) -> String {
         self.sequences
             .iter()
             .map(|seq| seq.to_string())
+            .collect::<String>()
+    }
+
+
+    /// Extracts all literal text segments from the prompt builder and concatenates them.
+    ///
+    /// This method collects all `ZshSequence::Literal` contents into a single String,
+    /// ignoring all other Zsh escape sequences (style, color, dynamic info).
+    pub fn text(&self) -> String {
+        self.sequences
+            .iter()
+            .filter_map(|seq| {
+                if let ZshSequence::Literal(s) = seq {
+                    Some(s.clone())
+                } else {
+                    None
+                }
+            })
             .collect::<String>()
     }
 }
@@ -209,5 +228,41 @@ mod tests {
             .end_color()
             .build();
         assert_eq!(prompt, "%F{100,200,255}Custom RGB%f");
+    }
+
+
+
+    #[test]
+    fn test_extract_literal_text_only_literal() {
+        let builder = ZshPromptBuilder::new().text("hello").text(" world");
+        assert_eq!(builder.text(), "hello world");
+    }
+
+    #[test]
+    fn test_extract_literal_text_with_zsh_sequences() {
+        let builder = ZshPromptBuilder::new()
+            .bold()
+            .color(NamedColor::Red)
+            .text("Warning: ")
+            .hostname_short()
+            .text(" at ")
+            .current_dir_full()
+            .end_color();
+        assert_eq!(builder.text(), "Warning:  at ");
+    }
+
+    #[test]
+    fn test_extract_literal_text_with_multibyte() {
+        let builder = ZshPromptBuilder::new().text("日本語").text("text");
+        assert_eq!(builder.text(), "日本語text");
+    }
+
+    #[test]
+    fn test_extract_literal_text_empty() {
+        let builder = ZshPromptBuilder::new()
+            .bold()
+            .username()
+            .privileged_indicator();
+        assert_eq!(builder.text(), "");
     }
 }

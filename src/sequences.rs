@@ -91,6 +91,7 @@ impl std::fmt::Display for ZshSequence {
     }
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -143,7 +144,7 @@ mod tests {
     fn test_true_color_foreground_sequence() {
         assert_eq!(
             ZshSequence::TrueColorForegroundColor(255, 0, 0).to_string(),
-            "%{{\x1b[38;2;255;0;0m%}}"
+            "%{\x1b[38;2;255;0;0m%}"
         );
     }
 
@@ -151,13 +152,13 @@ mod tests {
     fn test_true_color_background_sequence() {
         assert_eq!(
             ZshSequence::TrueColorBackgroundColor(0, 0, 255).to_string(),
-            "%{{\x1b[48;2;0;0;255m%}}"
+            "%{\x1b[48;2;0;0;255m%}"
         );
     }
 
     #[test]
     fn test_reset_styles_sequence() {
-        assert_eq!(ZshSequence::ResetStyles.to_string(), "%{{\x1b[0m%}}");
+        assert_eq!(ZshSequence::ResetStyles.to_string(), "%{\x1b[0m%}");
     }
 
     #[test]
