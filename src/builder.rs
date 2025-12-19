@@ -39,8 +39,6 @@ impl ZshPromptBuilder {
         self
     }
 
-
-
     pub fn reset_styles(mut self) -> Self {
         self.sequences.push(ZshSequence::ResetStyles);
         self

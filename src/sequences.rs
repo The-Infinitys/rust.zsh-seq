@@ -53,18 +53,14 @@ impl std::fmt::Display for ZshSequence {
             ZshSequence::UnderlineEnd => write!(f, "%u"),
             ZshSequence::StandoutStart => write!(f, "%S"),
             ZshSequence::StandoutEnd => write!(f, "%s"),
-            ZshSequence::ForegroundColor(color) => {
-                match color {
-                    NamedColor::FullColor((r, g, b)) => write!(f, "%{{\x1b[38;2;{};{};{}m%}}", r, g, b),
-                    _ => write!(f, "%F{{{}}}", color.to_zsh_string()),
-                }
+            ZshSequence::ForegroundColor(color) => match color {
+                NamedColor::FullColor((r, g, b)) => write!(f, "%{{\x1b[38;2;{};{};{}m%}}", r, g, b),
+                _ => write!(f, "%F{{{}}}", color.to_zsh_string()),
             },
             ZshSequence::ForegroundColorEnd => write!(f, "%f"),
-            ZshSequence::BackgroundColor(color) => {
-                match color {
-                    NamedColor::FullColor((r, g, b)) => write!(f, "%{{\x1b[48;2;{};{};{}m%}}", r, g, b),
-                    _ => write!(f, "%K{{{}}}", color.to_zsh_string()),
-                }
+            ZshSequence::BackgroundColor(color) => match color {
+                NamedColor::FullColor((r, g, b)) => write!(f, "%{{\x1b[48;2;{};{};{}m%}}", r, g, b),
+                _ => write!(f, "%K{{{}}}", color.to_zsh_string()),
             },
             ZshSequence::BackgroundColorEnd => write!(f, "%k"),
             ZshSequence::ResetStyles => write!(f, "%{{\x1b[0m%}}"),

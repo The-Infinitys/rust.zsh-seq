@@ -74,13 +74,13 @@ impl NamedColor {
                 // NamedColor::FullColorはエスケープシーケンスとして処理されるため、
                 // このメソッドで直接Zsh文字列に変換されるべきではない。
                 // したがって、ここに到達することは論理エラーを示す。
-                panic!("NamedColor::FullColor should be handled as an escape sequence, not converted to a Zsh string directly.");
+                panic!(
+                    "NamedColor::FullColor should be handled as an escape sequence, not converted to a Zsh string directly."
+                );
             }
         }
     }
 }
 
 #[cfg(test)]
-mod tests {
-    
-}
+mod tests {}
