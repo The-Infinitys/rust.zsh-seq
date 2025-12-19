@@ -132,7 +132,6 @@ impl ZshPromptBuilder {
             .collect::<String>()
     }
 
-
     /// Extracts all literal text segments from the prompt builder and concatenates them.
     ///
     /// This method collects all `ZshSequence::Literal` contents into a single String,
@@ -229,8 +228,6 @@ mod tests {
             .build();
         assert_eq!(prompt, "%F{100,200,255}Custom RGB%f");
     }
-
-
 
     #[test]
     fn test_extract_literal_text_only_literal() {

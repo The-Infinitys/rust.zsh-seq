@@ -91,7 +91,6 @@ impl std::fmt::Display for ZshSequence {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
