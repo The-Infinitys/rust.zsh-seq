@@ -124,7 +124,10 @@ impl ZshPromptBuilder {
         self.sequences.push(ZshSequence::Newline);
         self
     }
-
+    pub fn connect(mut self, other: Self) -> Self {
+        self.sequences.extend(other.sequences);
+        self
+    }
     pub fn build(&self) -> String {
         self.sequences
             .iter()
@@ -261,5 +264,29 @@ mod tests {
             .username()
             .privileged_indicator();
         assert_eq!(builder.text(), "");
+    }
+    #[test]
+    fn test_builder_connect() {
+        let part1 = ZshPromptBuilder::new()
+            .color(NamedColor::Blue)
+            .str("[")
+            .end_color();
+
+        let part2 = ZshPromptBuilder::new().username().str("@").hostname_short();
+
+        let part3 = ZshPromptBuilder::new()
+            .color(NamedColor::Blue)
+            .str("]")
+            .end_color();
+
+        // 3つのビルダーを結合
+        let prompt = ZshPromptBuilder::new()
+            .connect(part1)
+            .connect(part2)
+            .connect(part3)
+            .build();
+
+        // 期待される出力: %F{blue}[%f%n@%m%F{blue}]%f
+        assert_eq!(prompt, "%F{blue}[%f%n@%m%F{blue}]%f");
     }
 }
