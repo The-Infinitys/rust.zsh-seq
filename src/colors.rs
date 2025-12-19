@@ -70,18 +70,17 @@ impl NamedColor {
             NamedColor::LightCyan => "lightcyan".to_string(),
             NamedColor::LightWhite => "white".to_string(),
             NamedColor::Code256(code) => code.to_string(),
-            NamedColor::FullColor((r, g, b)) => format!("{},{},{}", r, g, b),
+            NamedColor::FullColor((_, _, _)) => {
+                // NamedColor::FullColorはエスケープシーケンスとして処理されるため、
+                // このメソッドで直接Zsh文字列に変換されるべきではない。
+                // したがって、ここに到達することは論理エラーを示す。
+                panic!("NamedColor::FullColor should be handled as an escape sequence, not converted to a Zsh string directly.");
+            }
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
-    fn test_full_color_named_color() {
-        let color = NamedColor::FullColor((255, 128, 0));
-        assert_eq!(color.to_zsh_string(), "255,128,0");
-    }
+    
 }

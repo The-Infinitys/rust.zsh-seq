@@ -25,10 +25,6 @@ pub enum ZshSequence {
     BackgroundColor(NamedColor),
     /// Stop background color (%k)
     BackgroundColorEnd,
-    /// Start true color foreground (R, G, B) - generates %{\x1b[38;2;R;G;Bm%}
-    TrueColorForegroundColor(u8, u8, u8),
-    /// Start true color background (R, G, B) - generates %{\x1b[48;2;R;G;Bm%}
-    TrueColorBackgroundColor(u8, u8, u8),
     /// Reset all styles and colors - generates %{\x1b[0m%}
     ResetStyles,
     /// Username
@@ -57,16 +53,20 @@ impl std::fmt::Display for ZshSequence {
             ZshSequence::UnderlineEnd => write!(f, "%u"),
             ZshSequence::StandoutStart => write!(f, "%S"),
             ZshSequence::StandoutEnd => write!(f, "%s"),
-            ZshSequence::ForegroundColor(color) => write!(f, "%F{{{}}}", color.to_zsh_string()),
+            ZshSequence::ForegroundColor(color) => {
+                match color {
+                    NamedColor::FullColor((r, g, b)) => write!(f, "%{{\x1b[38;2;{};{};{}m%}}", r, g, b),
+                    _ => write!(f, "%F{{{}}}", color.to_zsh_string()),
+                }
+            },
             ZshSequence::ForegroundColorEnd => write!(f, "%f"),
-            ZshSequence::BackgroundColor(color) => write!(f, "%K{{{}}}", color.to_zsh_string()),
+            ZshSequence::BackgroundColor(color) => {
+                match color {
+                    NamedColor::FullColor((r, g, b)) => write!(f, "%{{\x1b[48;2;{};{};{}m%}}", r, g, b),
+                    _ => write!(f, "%K{{{}}}", color.to_zsh_string()),
+                }
+            },
             ZshSequence::BackgroundColorEnd => write!(f, "%k"),
-            ZshSequence::TrueColorForegroundColor(r, g, b) => {
-                write!(f, "%{{\x1b[38;2;{};{};{}m%}}", r, g, b)
-            }
-            ZshSequence::TrueColorBackgroundColor(r, g, b) => {
-                write!(f, "%{{\x1b[48;2;{};{};{}m%}}", r, g, b)
-            }
             ZshSequence::ResetStyles => write!(f, "%{{\x1b[0m%}}"),
             ZshSequence::Username => write!(f, "%n"),
             ZshSequence::HostnameShort => write!(f, "%m"),
@@ -140,22 +140,6 @@ mod tests {
     }
 
     #[test]
-    fn test_true_color_foreground_sequence() {
-        assert_eq!(
-            ZshSequence::TrueColorForegroundColor(255, 0, 0).to_string(),
-            "%{\x1b[38;2;255;0;0m%}"
-        );
-    }
-
-    #[test]
-    fn test_true_color_background_sequence() {
-        assert_eq!(
-            ZshSequence::TrueColorBackgroundColor(0, 0, 255).to_string(),
-            "%{\x1b[48;2;0;0;255m%}"
-        );
-    }
-
-    #[test]
     fn test_reset_styles_sequence() {
         assert_eq!(ZshSequence::ResetStyles.to_string(), "%{\x1b[0m%}");
     }
@@ -191,12 +175,5 @@ mod tests {
             ZshSequence::Literal("hello".to_string()).to_string(),
             "hello"
         );
-    }
-
-    #[test]
-    fn test_full_color_foreground_sequence() {
-        let seq = ZshSequence::ForegroundColor(NamedColor::FullColor((255, 128, 0)));
-        // Zshは %F{255,128,0} という形式をサポートしています
-        assert_eq!(seq.to_string(), "%F{255,128,0}");
     }
 }

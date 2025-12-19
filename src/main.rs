@@ -22,7 +22,7 @@ fn main() {
     // 1. Builderで作成した複雑なプロンプト
     let prompt = ZshPromptBuilder::new()
         .bold()
-        .color(NamedColor::Green)
+        .color(NamedColor::FullColor((0, 255, 0)))
         .username()
         .str("@")
         .hostname_short()
