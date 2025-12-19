@@ -153,7 +153,19 @@ impl std::fmt::Display for ZshSequence {
             ZshSequence::CurrentDirectoryTilde => write!(f, "%~"),
             ZshSequence::PrivilegedIndicator => write!(f, "%#"),
             ZshSequence::Newline => write!(f, "\n"),
-            ZshSequence::Literal(s) => write!(f, "{}", s),
+            ZshSequence::Literal(s) => {
+                for c in s.chars() {
+                    if c.is_ascii() {
+                        // 通常のASCII文字（英数字など）はそのまま出力
+                        write!(f, "{}", c)?;
+                    } else {
+                        // マルチバイト文字（記号・全角文字など）のみ %{%G...%} で囲む
+                        // これにより、Zshに「この文字は見た目に関わらず1文字幅である」と教える
+                        write!(f, "%{{%G{}%}}", c)?;
+                    }
+                }
+                Ok(())
+            }
         }
     }
 }
