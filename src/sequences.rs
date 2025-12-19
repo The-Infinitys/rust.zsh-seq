@@ -73,7 +73,7 @@ impl std::fmt::Display for ZshSequence {
             ZshSequence::CurrentDirectoryFull => write!(f, "%/"), // Or %d
             ZshSequence::CurrentDirectoryTilde => write!(f, "%~"),
             ZshSequence::PrivilegedIndicator => write!(f, "%#"),
-            ZshSequence::Newline => write!(f, "\n"),
+            ZshSequence::Newline => writeln!(f),
             ZshSequence::Literal(s) => {
                 for c in s.chars() {
                     if c.is_ascii() {
