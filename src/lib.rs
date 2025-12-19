@@ -41,6 +41,8 @@ pub enum ZshSequence {
     CurrentDirectoryTilde,
     /// # if privileged, % if not
     PrivilegedIndicator,
+    /// Newline (Physical line break)
+    Newline,
     /// Custom string that can be inserted directly.
     Literal(String),
 }
@@ -119,7 +121,6 @@ impl NamedColor {
             NamedColor::LightCyan => "lightcyan".to_string(),
             NamedColor::LightWhite => "white".to_string(),
             NamedColor::Code256(code) => code.to_string(),
-            // Zshの %F{r,g,b} 形式に対応
             NamedColor::FullColor((r, g, b)) => format!("{},{},{}", r, g, b),
         }
     }
@@ -151,6 +152,7 @@ impl std::fmt::Display for ZshSequence {
             ZshSequence::CurrentDirectoryFull => write!(f, "%/"), // Or %d
             ZshSequence::CurrentDirectoryTilde => write!(f, "%~"),
             ZshSequence::PrivilegedIndicator => write!(f, "%#"),
+            ZshSequence::Newline => write!(f, "\n"),
             ZshSequence::Literal(s) => write!(f, "{}", s),
         }
     }
@@ -346,7 +348,10 @@ impl ZshPromptBuilder {
         self.sequences.push(ZshSequence::PrivilegedIndicator);
         self
     }
-
+    pub fn newline(mut self) -> Self {
+        self.sequences.push(ZshSequence::Newline);
+        self
+    }
     pub fn build(&self) -> String {
         self.sequences
             .iter()
