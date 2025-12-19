@@ -24,7 +24,7 @@ impl ZshPromptBuilder {
         self
     }
 
-    pub fn text(mut self, text: &str) -> Self {
+    pub fn str(mut self, text: &str) -> Self {
         self.sequences.push(ZshSequence::Literal(text.to_string()));
         self
     }
@@ -159,11 +159,11 @@ mod tests {
     #[test]
     fn test_builder_simple() {
         let prompt = ZshPromptBuilder::new()
-            .text("Hello, ")
+            .str("Hello, ")
             .username()
-            .text("! ")
+            .str("! ")
             .current_dir_tilde()
-            .text(" ")
+            .str(" ")
             .privileged_indicator()
             .build();
         assert_eq!(prompt, "Hello, %n! %~ %#");
@@ -174,7 +174,7 @@ mod tests {
         let prompt = ZshPromptBuilder::new()
             .bold()
             .color(NamedColor::Green)
-            .text("Success: ")
+            .str("Success: ")
             .end_color()
             .end_bold()
             .current_dir_tilde()
@@ -186,10 +186,10 @@ mod tests {
     fn test_builder_chaining() {
         let prompt = ZshPromptBuilder::new()
             .color(NamedColor::Red)
-            .text("ERROR: ")
+            .str("ERROR: ")
             .end_color()
             .bold()
-            .text("Something went wrong at ")
+            .str("Something went wrong at ")
             .current_dir_full()
             .end_bold()
             .build();
@@ -200,7 +200,7 @@ mod tests {
     fn test_builder_true_color() {
         let prompt = ZshPromptBuilder::new()
             .rgb_color(255, 100, 0)
-            .text("Hello, True Color!")
+            .str("Hello, True Color!")
             .reset_styles()
             .build();
         assert_eq!(
@@ -213,7 +213,7 @@ mod tests {
     fn test_builder_true_color_bg() {
         let prompt = ZshPromptBuilder::new()
             .rgb_color_bg(50, 50, 50)
-            .text("Dark Background")
+            .str("Dark Background")
             .reset_styles()
             .build();
         assert_eq!(prompt, "%{\x1b[48;2;50;50;50m%}Dark Background%{\x1b[0m%}");
@@ -223,7 +223,7 @@ mod tests {
     fn test_builder_with_full_color() {
         let prompt = ZshPromptBuilder::new()
             .color(NamedColor::FullColor((100, 200, 255)))
-            .text("Custom RGB")
+            .str("Custom RGB")
             .end_color()
             .build();
         assert_eq!(prompt, "%F{100,200,255}Custom RGB%f");
@@ -231,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_extract_literal_text_only_literal() {
-        let builder = ZshPromptBuilder::new().text("hello").text(" world");
+        let builder = ZshPromptBuilder::new().str("hello").str(" world");
         assert_eq!(builder.text(), "hello world");
     }
 
@@ -240,9 +240,9 @@ mod tests {
         let builder = ZshPromptBuilder::new()
             .bold()
             .color(NamedColor::Red)
-            .text("Warning: ")
+            .str("Warning: ")
             .hostname_short()
-            .text(" at ")
+            .str(" at ")
             .current_dir_full()
             .end_color();
         assert_eq!(builder.text(), "Warning:  at ");
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_extract_literal_text_with_multibyte() {
-        let builder = ZshPromptBuilder::new().text("日本語").text("text");
+        let builder = ZshPromptBuilder::new().str("日本語").str("text");
         assert_eq!(builder.text(), "日本語text");
     }
 
