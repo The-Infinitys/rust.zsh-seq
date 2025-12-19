@@ -24,12 +24,12 @@ fn main() {
         .bold()
         .color(NamedColor::Green)
         .username()
-        .text("@")
+        .str("@")
         .hostname_short()
         .end_bold()
-        .text(" ")
+        .str(" ")
         .current_dir_tilde()
-        .text(" ")
+        .str(" ")
         .privileged_indicator()
         .build();
 
