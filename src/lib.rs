@@ -1,3 +1,5 @@
+use std::fmt;
+
 /// Represents a Zsh prompt sequence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ZshSequence {
@@ -64,6 +66,36 @@ pub enum NamedColor {
     LightWhite,  // Often Bright White
     Code256(u8), // 0-255
     FullColor((u8, u8, u8)),
+}
+
+impl fmt::Display for NamedColor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Use a dummy serializer to get the string representation.
+        // This is a workaround as zsh-seq::NamedColor doesn't implement Display.
+        // The implementation here mirrors the serialize logic in named_color_serde.rs
+        // to provide a consistent string representation.
+        let s = match self {
+            NamedColor::Black => "Black".to_string(),
+            NamedColor::Red => "Red".to_string(),
+            NamedColor::Green => "Green".to_string(),
+            NamedColor::Yellow => "Yellow".to_string(),
+            NamedColor::Blue => "Blue".to_string(),
+            NamedColor::Magenta => "Magenta".to_string(),
+            NamedColor::Cyan => "Cyan".to_string(),
+            NamedColor::White => "White".to_string(),
+            NamedColor::LightBlack => "LightBlack".to_string(),
+            NamedColor::LightRed => "LightRed".to_string(),
+            NamedColor::LightGreen => "LightGreen".to_string(),
+            NamedColor::LightYellow => "LightYellow".to_string(),
+            NamedColor::LightBlue => "LightBlue".to_string(),
+            NamedColor::LightMagenta => "LightMagenta".to_string(),
+            NamedColor::LightCyan => "LightCyan".to_string(),
+            NamedColor::LightWhite => "LightWhite".to_string(),
+            NamedColor::Code256(code) => format!("Code256({})", code),
+            NamedColor::FullColor((r, g, b)) => format!("FullColor({},{},{})", r, g, b),
+        };
+        write!(f, "{}", s)
+    }
 }
 
 impl NamedColor {
