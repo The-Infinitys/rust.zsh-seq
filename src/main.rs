@@ -1,8 +1,26 @@
 use zsh_seq::{ColoredZshPrompt, NamedColor, ZshPromptBuilder};
 
+use std::process::Command;
+
+/// Zshのプロンプトエスケープを解釈した結果を、標準出力にそのまま表示するテスト用関数
+fn test_output_in_zsh(prompt: &str) {
+    let output = Command::new("zsh")
+        .arg("-c")
+        // print -P はプロンプトシーケンスを解釈して出力するコマンド
+        .arg(format!("print -P '{}'", prompt))
+        .output()
+        .expect("failed to execute zsh");
+
+    if output.status.success() {
+        // Zshが解釈した結果（カラーコード等を含む）をターミナルに表示
+        println!("{}", String::from_utf8_lossy(&output.stdout));
+    } else {
+        eprintln!("Error: {}", String::from_utf8_lossy(&output.stderr));
+    }
+}
 fn main() {
-    // ZshPromptBuilder の使用例
-    let prompt_builder_example = ZshPromptBuilder::new()
+    // 1. Builderで作成した複雑なプロンプト
+    let prompt = ZshPromptBuilder::new()
         .bold()
         .color(NamedColor::Green)
         .username()
@@ -10,34 +28,17 @@ fn main() {
         .hostname_short()
         .end_bold()
         .text(" ")
-        .color(NamedColor::Blue)
         .current_dir_tilde()
-        .end_color()
         .text(" ")
         .privileged_indicator()
-        .text(" ")
         .build();
 
-    println!("Builder example: {}", prompt_builder_example);
+    println!("Raw string: {}", prompt);
+    print!("Zsh rendered: ");
+    test_output_in_zsh(&prompt);
 
-    // ColoredZshPrompt トレイトの使用例
-    let trait_example_red = "Error: Something went wrong!".red().bold();
-    println!("Trait example (red bold): {}", trait_example_red);
-
-    let trait_example_green_on_yellow = "Success!".green().on_yellow();
-    println!("Trait example (green on yellow): {}", trait_example_green_on_yellow);
-
-    let trait_example_rgb = "True Color Text".rgb_color(255, 100, 0).underline();
-    println!("Trait example (RGB underline): {}", trait_example_rgb);
-
-    let trait_example_rgb_bg = "RGB Background".on_rgb_color(50, 50, 50).white();
-    println!("Trait example (RGB background white text): {}", trait_example_rgb_bg);
-
-    let combined_example = format!(
-        "{}{}{}",
-        "Current user: ".green(),
-        zsh_seq::ZshSequence::Username.to_string().bold(), // ZshSequence直接利用
-        " in ".on_blue().white(),
-    );
-    println!("Combined example: {}", combined_example);
+    // 2. トレイトを使った簡便な装飾
+    let warning = "Critical Error".red().bold().on_yellow();
+    print!("Trait rendered: ");
+    test_output_in_zsh(&warning);
 }
