@@ -44,7 +44,7 @@ pub enum ZshSequence {
 }
 
 /// Represents a color for Zsh prompt sequences (named colors or 256-color codes).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum NamedColor {
     Black,
     Red,
@@ -63,6 +63,7 @@ pub enum NamedColor {
     LightCyan,
     LightWhite,  // Often Bright White
     Code256(u8), // 0-255
+    FullColor((u8, u8, u8)),
 }
 
 impl NamedColor {
@@ -77,7 +78,7 @@ impl NamedColor {
             NamedColor::Magenta => "magenta".to_string(),
             NamedColor::Cyan => "cyan".to_string(),
             NamedColor::White => "white".to_string(),
-            NamedColor::LightBlack => "240".to_string(), // Dark Gray (256-color code)
+            NamedColor::LightBlack => "240".to_string(),
             NamedColor::LightRed => "lightred".to_string(),
             NamedColor::LightGreen => "lightgreen".to_string(),
             NamedColor::LightYellow => "lightyellow".to_string(),
@@ -86,6 +87,8 @@ impl NamedColor {
             NamedColor::LightCyan => "lightcyan".to_string(),
             NamedColor::LightWhite => "white".to_string(),
             NamedColor::Code256(code) => code.to_string(),
+            // Zshの %F{r,g,b} 形式に対応
+            NamedColor::FullColor((r, g, b)) => format!("{},{},{}", r, g, b),
         }
     }
 }
@@ -482,5 +485,28 @@ mod tests {
             .reset_styles()
             .build();
         assert_eq!(prompt, "%{\x1b[48;2;50;50;50m%}Dark Background%{\x1b[0m%}");
+    }
+
+    #[test]
+    fn test_full_color_named_color() {
+        let color = NamedColor::FullColor((255, 128, 0));
+        assert_eq!(color.to_zsh_string(), "255,128,0");
+    }
+
+    #[test]
+    fn test_full_color_foreground_sequence() {
+        let seq = ZshSequence::ForegroundColor(NamedColor::FullColor((255, 128, 0)));
+        // Zshは %F{255,128,0} という形式をサポートしています
+        assert_eq!(seq.to_string(), "%F{255,128,0}");
+    }
+
+    #[test]
+    fn test_builder_with_full_color() {
+        let prompt = ZshPromptBuilder::new()
+            .color(NamedColor::FullColor((100, 200, 255)))
+            .text("Custom RGB")
+            .end_color()
+            .build();
+        assert_eq!(prompt, "%F{100,200,255}Custom RGB%f");
     }
 }
