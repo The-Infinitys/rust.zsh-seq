@@ -6,6 +6,8 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+crossterm = "0.29.0"
+unicode-width = "0.2.2"
 
 [lib]
 name = "zsh_seq"
