@@ -155,7 +155,7 @@ impl ZshPromptBuilder {
         }
     }
     pub fn len(&self) -> usize {
-        let raw = self.build();
+        let raw = self.raw_text();
         let re = Regex::new(r"\x1b\[[0-9;]*[mK]").unwrap();
         let s = re.replace_all(&raw, "");
         UnicodeWidthStr::width(s.as_ref())
