@@ -1,3 +1,4 @@
+use regex::Regex;
 use unicode_width::UnicodeWidthStr;
 
 use crate::colors::NamedColor;
@@ -143,9 +144,6 @@ impl ZshPromptBuilder {
     }
     pub fn raw_text(&self) -> String {
         let zsh_str = self.build();
-
-        // zshを起動してプロンプトシーケンスを展開する
-        // print -P はプロンプト展開（Prompt Expansion）を行うフラグです
         let output = std::process::Command::new("zsh")
             .arg("-c")
             .arg(format!("print -P \"{}\"", zsh_str))
@@ -157,8 +155,10 @@ impl ZshPromptBuilder {
         }
     }
     pub fn len(&self) -> usize {
-        let raw = self.raw_text();
-        UnicodeWidthStr::width(raw.as_str())
+        let raw = self.build();
+        let re = Regex::new(r"\x1b\[[0-9;]*[mK]").unwrap();
+        let s = re.replace_all(&raw, "");
+        UnicodeWidthStr::width(s.as_ref())
     }
 }
 
