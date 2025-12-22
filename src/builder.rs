@@ -117,7 +117,7 @@ impl ZshPromptBuilder {
         self
     }
     pub fn connect(&mut self, other: &mut ZshPromptBuilder) -> &mut Self {
-        self.sequences.extend(other.sequences.drain(..));
+        self.sequences.append(&mut other.sequences);
         self
     }
     pub fn build(&self) -> String {
@@ -161,6 +161,9 @@ impl ZshPromptBuilder {
         let s = re.replace_all(&raw, "");
         UnicodeWidthStr::width(s.as_ref())
     }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl ShellPromptBuilder for ZshPromptBuilder {
@@ -200,7 +203,8 @@ impl ShellPromptBuilder for ZshPromptBuilder {
     fn add_end_standout(&mut self) -> &mut Self {
         self.end_standout()
     }
-    fn add_connect(&mut self, other: &mut Self) -> &mut Self { // <- other: &mut Self に変更
+    fn add_connect(&mut self, other: &mut Self) -> &mut Self {
+        // <- other: &mut Self に変更
         self.connect(other)
     }
     fn build(&self) -> String {
@@ -235,5 +239,8 @@ impl ZshSpecificBuilder for ZshPromptBuilder {
     }
     fn len(&self) -> usize {
         self.len()
+    }
+    fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }

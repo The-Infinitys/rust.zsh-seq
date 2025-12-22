@@ -101,5 +101,5 @@ pub trait ZshSpecificBuilder: Send + Sync {
     fn newline(&mut self) -> &mut Self;
     fn raw_text(&self) -> String; // self を消費しない
     fn len(&self) -> usize; // self を消費しない
+    fn is_empty(&self) -> bool;
 }
-
