@@ -1,4 +1,4 @@
-pub trait ColoredZshPrompt {
+pub trait ColoredTermPrompt {
     fn bold(self) -> String;
     fn underline(self) -> String;
     fn red(self) -> String;
@@ -12,7 +12,7 @@ pub trait ColoredZshPrompt {
     fn on_rgb_color(self, r: u8, g: u8, b: u8) -> String;
 }
 
-impl<T: AsRef<str>> ColoredZshPrompt for T {
+impl<T: AsRef<str>> ColoredTermPrompt for T {
     fn bold(self) -> String {
         format!("%B{}%b", self.as_ref())
     }
@@ -91,8 +91,8 @@ pub trait ShellPromptBuilder: Send + Sync {
     fn text(&self) -> String;
 }
 
-// Zsh 固有の機能のためのトレイト
-pub trait ZshSpecificBuilder: Send + Sync {
+// Term 固有の機能のためのトレイト
+pub trait TermSpecificBuilder: Send + Sync {
     fn username(&mut self) -> &mut Self;
     fn hostname_short(&mut self) -> &mut Self;
     fn current_dir_full(&mut self) -> &mut Self;

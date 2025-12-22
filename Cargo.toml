@@ -1,5 +1,5 @@
 [package]
-name = "zsh-seq"
+name = "term-seq"
 version = "0.1.0"
 edition = "2024"
 
@@ -10,9 +10,9 @@ regex = "1.12.2"
 unicode-width = "0.2.2"
 
 [lib]
-name = "zsh_seq"
+name = "term_seq"
 path = "src/lib.rs"
 
 [[bin]]
-name = "zsh_seq_cli"
+name = "term_seq_cli"
 path = "src/main.rs"

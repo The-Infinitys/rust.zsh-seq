@@ -2,121 +2,121 @@ use regex::Regex;
 use unicode_width::UnicodeWidthStr;
 
 use crate::colors::NamedColor;
-use crate::sequences::ZshSequence;
-use crate::traits::{ShellPromptBuilder, ZshSpecificBuilder}; // 自前のトレイトをインポート
+use crate::sequences::TermSequence;
+use crate::traits::{ShellPromptBuilder, TermSpecificBuilder}; // 自前のトレイトをインポート
 
 /// A helper struct to build a prompt string
-pub struct ZshPromptBuilder {
-    sequences: Vec<ZshSequence>,
+pub struct TermPromptBuilder {
+    sequences: Vec<TermSequence>,
 }
 
-impl Default for ZshPromptBuilder {
+impl Default for TermPromptBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ZshPromptBuilder {
+impl TermPromptBuilder {
     pub fn new() -> Self {
         Self {
             sequences: Vec::new(),
         }
     }
 
-    pub fn add_sequence(&mut self, sequence: ZshSequence) -> &mut Self {
+    pub fn add_sequence(&mut self, sequence: TermSequence) -> &mut Self {
         self.sequences.push(sequence);
         self
     }
 
     pub fn str(&mut self, text: &str) -> &mut Self {
-        self.sequences.push(ZshSequence::Literal(text.to_string()));
+        self.sequences.push(TermSequence::Literal(text.to_string()));
         self
     }
 
     pub fn color(&mut self, color: NamedColor) -> &mut Self {
-        self.sequences.push(ZshSequence::ForegroundColor(color));
+        self.sequences.push(TermSequence::ForegroundColor(color));
         self
     }
 
     pub fn color_bg(&mut self, color: NamedColor) -> &mut Self {
-        self.sequences.push(ZshSequence::BackgroundColor(color));
+        self.sequences.push(TermSequence::BackgroundColor(color));
         self
     }
 
     pub fn reset_styles(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::ResetStyles);
+        self.sequences.push(TermSequence::ResetStyles);
         self
     }
 
     pub fn bold(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::BoldStart);
+        self.sequences.push(TermSequence::BoldStart);
         self
     }
 
     pub fn underline(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::UnderlineStart);
+        self.sequences.push(TermSequence::UnderlineStart);
         self
     }
 
     pub fn standout(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::StandoutStart);
+        self.sequences.push(TermSequence::StandoutStart);
         self
     }
 
     pub fn end_color(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::ForegroundColorEnd);
+        self.sequences.push(TermSequence::ForegroundColorEnd);
         self
     }
 
     pub fn end_color_bg(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::BackgroundColorEnd);
+        self.sequences.push(TermSequence::BackgroundColorEnd);
         self
     }
 
     pub fn end_bold(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::BoldEnd);
+        self.sequences.push(TermSequence::BoldEnd);
         self
     }
 
     pub fn end_underline(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::UnderlineEnd);
+        self.sequences.push(TermSequence::UnderlineEnd);
         self
     }
 
     pub fn end_standout(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::StandoutEnd);
+        self.sequences.push(TermSequence::StandoutEnd);
         self
     }
 
     pub fn username(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::Username);
+        self.sequences.push(TermSequence::Username);
         self
     }
 
     pub fn hostname_short(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::HostnameShort);
+        self.sequences.push(TermSequence::HostnameShort);
         self
     }
 
     pub fn current_dir_full(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::CurrentDirectoryFull);
+        self.sequences.push(TermSequence::CurrentDirectoryFull);
         self
     }
 
     pub fn current_dir_tilde(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::CurrentDirectoryTilde);
+        self.sequences.push(TermSequence::CurrentDirectoryTilde);
         self
     }
 
     pub fn privileged_indicator(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::PrivilegedIndicator);
+        self.sequences.push(TermSequence::PrivilegedIndicator);
         self
     }
     pub fn newline(&mut self) -> &mut Self {
-        self.sequences.push(ZshSequence::Newline);
+        self.sequences.push(TermSequence::Newline);
         self
     }
-    pub fn connect(&mut self, other: &mut ZshPromptBuilder) -> &mut Self {
+    pub fn connect(&mut self, other: &mut TermPromptBuilder) -> &mut Self {
         self.sequences.append(&mut other.sequences);
         self
     }
@@ -129,13 +129,13 @@ impl ZshPromptBuilder {
 
     /// Extracts all literal text segments from the prompt builder and concatenates them.
     ///
-    /// This method collects all `ZshSequence::Literal` contents into a single String,
-    /// ignoring all other Zsh escape sequences (style, color, dynamic info).
+    /// This method collects all `TermSequence::Literal` contents into a single String,
+    /// ignoring all other Term escape sequences (style, color, dynamic info).
     pub fn text(&self) -> String {
         self.sequences
             .iter()
             .filter_map(|seq| {
-                if let ZshSequence::Literal(s) = seq {
+                if let TermSequence::Literal(s) = seq {
                     Some(s.clone())
                 } else {
                     None
@@ -144,10 +144,10 @@ impl ZshPromptBuilder {
             .collect::<String>()
     }
     pub fn raw_text(&self) -> String {
-        let zsh_str = self.build();
-        let output = std::process::Command::new("zsh")
+        let term_str = self.build();
+        let output = std::process::Command::new("term")
             .arg("-c")
-            .arg(format!("print -P \"{}\"", zsh_str))
+            .arg(format!("print -P \"{}\"", term_str))
             .output();
 
         match output {
@@ -166,7 +166,7 @@ impl ZshPromptBuilder {
     }
 }
 
-impl ShellPromptBuilder for ZshPromptBuilder {
+impl ShellPromptBuilder for TermPromptBuilder {
     fn add_str(&mut self, text: &str) -> &mut Self {
         self.str(text)
     }
@@ -215,7 +215,7 @@ impl ShellPromptBuilder for ZshPromptBuilder {
     }
 }
 
-impl ZshSpecificBuilder for ZshPromptBuilder {
+impl TermSpecificBuilder for TermPromptBuilder {
     fn username(&mut self) -> &mut Self {
         self.username()
     }
