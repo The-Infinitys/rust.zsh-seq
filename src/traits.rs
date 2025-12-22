@@ -69,3 +69,37 @@ impl<T: AsRef<str>> ColoredZshPrompt for T {
         )
     }
 }
+
+use crate::colors::NamedColor;
+
+pub trait ShellPromptBuilder: Send + Sync {
+    fn add_str(&mut self, text: &str) -> &mut Self;
+    fn add_color(&mut self, color: NamedColor) -> &mut Self;
+    fn add_color_bg(&mut self, color: NamedColor) -> &mut Self;
+    fn add_reset_styles(&mut self) -> &mut Self;
+    fn add_bold(&mut self) -> &mut Self;
+    fn add_underline(&mut self) -> &mut Self;
+    fn add_standout(&mut self) -> &mut Self;
+    fn add_end_color(&mut self) -> &mut Self;
+    fn add_end_color_bg(&mut self) -> &mut Self;
+    fn add_end_bold(&mut self) -> &mut Self;
+    fn add_end_underline(&mut self) -> &mut Self;
+    fn add_end_standout(&mut self) -> &mut Self;
+    fn add_connect(&mut self, other: &mut Self) -> &mut Self;
+
+    fn build(&self) -> String;
+    fn text(&self) -> String;
+}
+
+// Zsh 固有の機能のためのトレイト
+pub trait ZshSpecificBuilder: Send + Sync {
+    fn username(&mut self) -> &mut Self;
+    fn hostname_short(&mut self) -> &mut Self;
+    fn current_dir_full(&mut self) -> &mut Self;
+    fn current_dir_tilde(&mut self) -> &mut Self;
+    fn privileged_indicator(&mut self) -> &mut Self;
+    fn newline(&mut self) -> &mut Self;
+    fn raw_text(&self) -> String; // self を消費しない
+    fn len(&self) -> usize; // self を消費しない
+}
+
