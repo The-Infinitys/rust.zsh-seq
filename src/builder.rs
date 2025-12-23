@@ -5,20 +5,31 @@ use crate::colors::NamedColor;
 use crate::sequences::TermSequence;
 use crate::traits::{ShellPromptBuilder, TermSpecificBuilder}; // 自前のトレイトをインポート
 
+/// A type of the shell
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum TermType {
+    #[default]
+    Zsh,
+    Bash,
+    Tmux,
+    Pwsh,
+}
 /// A helper struct to build a prompt string
 pub struct TermPromptBuilder {
+    term_type: TermType,
     sequences: Vec<TermSequence>,
 }
 
 impl Default for TermPromptBuilder {
     fn default() -> Self {
-        Self::new()
+        Self::new(TermType::default())
     }
 }
 
 impl TermPromptBuilder {
-    pub fn new() -> Self {
+    pub fn new(term_type: TermType) -> Self {
         Self {
+            term_type,
             sequences: Vec::new(),
         }
     }
@@ -123,7 +134,7 @@ impl TermPromptBuilder {
     pub fn build(&self) -> String {
         self.sequences
             .iter()
-            .map(|seq| seq.to_string())
+            .map(|seq| seq.to_shell_string(self.term_type))
             .collect::<String>()
     }
 
@@ -145,21 +156,29 @@ impl TermPromptBuilder {
     }
     pub fn raw_text(&self) -> String {
         let term_str = self.build();
-        let output = std::process::Command::new("term")
-            .arg("-c")
-            .arg(format!("print -P \"{}\"", term_str))
-            .output();
+        match self.term_type {
+            TermType::Zsh => {
+                let output = std::process::Command::new("term")
+                    .arg("-c")
+                    .arg(format!("print -P \"{}\"", term_str))
+                    .output();
 
-        match output {
-            Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
-            Err(_) => self.text(),
+                match output {
+                    Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
+                    Err(_) => self.text(), // Fallback to raw text if 'term' command fails
+                }
+            }
+            _ => {
+                // For Bash, Tmux, Pwsh, we cannot rely on 'term' command.
+                // We need to strip ANSI escape codes.
+                let re = Regex::new(r"\x1b\[[0-9;]*[mK]").unwrap();
+                re.replace_all(&term_str, "").to_string()
+            }
         }
     }
     pub fn len(&self) -> usize {
         let raw = self.raw_text();
-        let re = Regex::new(r"\x1b\[[0-9;]*[mK]").unwrap();
-        let s = re.replace_all(&raw, "");
-        UnicodeWidthStr::width(s.as_ref())
+        UnicodeWidthStr::width(raw.as_str())
     }
     pub fn is_empty(&self) -> bool {
         self.len() == 0

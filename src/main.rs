@@ -1,4 +1,4 @@
-use term_seq::{ColoredTermPrompt as ColoredTermPrompt, NamedColor, TermPromptBuilder};
+use term_seq::{ColoredTermPrompt, NamedColor, TermPromptBuilder};
 
 use std::process::Command;
 
@@ -20,7 +20,7 @@ fn test_output_in_term(prompt: &str) {
 }
 fn main() {
     // 1. Builderで作成した複雑なプロンプト
-    let prompt = TermPromptBuilder::new()
+    let prompt = TermPromptBuilder::default()
         .bold()
         .color(NamedColor::FullColor((0, 255, 0)))
         .username()
