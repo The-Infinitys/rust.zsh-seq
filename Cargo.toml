@@ -8,6 +8,7 @@ edition = "2024"
 [dependencies]
 regex = "1.12.2"
 unicode-width = "0.2.2"
+clap = { version = "4", features = ["derive"] }
 
 [lib]
 name = "term_seq"

@@ -118,3 +118,13 @@ fn test_tmux_literal_sequence() {
         "hello"
     );
 }
+
+#[test]
+fn test_tmux_decoration_sequences() {
+    assert_eq!(TermSequence::StrikethroughStart.to_shell_string(TermType::Tmux), "\x1b[9m");
+    assert_eq!(TermSequence::StrikethroughEnd.to_shell_string(TermType::Tmux), "\x1b[29m");
+    assert_eq!(TermSequence::OverlineStart.to_shell_string(TermType::Tmux), "\x1b[53m");
+    assert_eq!(TermSequence::OverlineEnd.to_shell_string(TermType::Tmux), "\x1b[55m");
+    assert_eq!(TermSequence::BlinkStart.to_shell_string(TermType::Tmux), "\x1b[5m");
+    assert_eq!(TermSequence::BlinkEnd.to_shell_string(TermType::Tmux), "\x1b[25m");
+}

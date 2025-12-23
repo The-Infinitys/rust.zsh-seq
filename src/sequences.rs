@@ -19,6 +19,18 @@ pub enum TermSequence {
     StandoutStart,
     /// Stop standout mode
     StandoutEnd,
+    /// Start strikethrough mode
+    StrikethroughStart,
+    /// Stop strikethrough mode
+    StrikethroughEnd,
+    /// Start overline mode
+    OverlineStart,
+    /// Stop overline mode
+    OverlineEnd,
+    /// Start blinking mode
+    BlinkStart,
+    /// Stop blinking mode
+    BlinkEnd,
     /// Start foreground color (using Term named colors or 256-color codes)
     ForegroundColor(NamedColor),
     /// Stop foreground color (%f)
@@ -56,6 +68,12 @@ impl TermSequence {
                 TermSequence::UnderlineEnd => "%u".to_string(),
                 TermSequence::StandoutStart => "%S".to_string(),
                 TermSequence::StandoutEnd => "%s".to_string(),
+                TermSequence::StrikethroughStart => "%{\x1b[9m%}".to_string(),
+                TermSequence::StrikethroughEnd => "%{\x1b[29m%}".to_string(),
+                TermSequence::OverlineStart => "%{\x1b[53m%}".to_string(),
+                TermSequence::OverlineEnd => "%{\x1b[55m%}".to_string(),
+                TermSequence::BlinkStart => "%{\x1b[5m%}".to_string(),
+                TermSequence::BlinkEnd => "%{\x1b[25m%}".to_string(),
                 TermSequence::ForegroundColor(color) => match color {
                     NamedColor::FullColor((r, g, b)) => {
                         format!("%{{\x1b[38;2;{};{};{}m%}}", r, g, b)
@@ -98,6 +116,12 @@ impl TermSequence {
                     TermSequence::UnderlineEnd => "\\[\\e[24m\\]".to_string(), // Or \e[0m
                     TermSequence::StandoutStart => "\\[\\e[7m\\]".to_string(), // Reverse video
                     TermSequence::StandoutEnd => "\\[\\e[27m\\]".to_string(),  // Or \e[0m
+                    TermSequence::StrikethroughStart => "\\[\\e[9m\\]".to_string(),
+                    TermSequence::StrikethroughEnd => "\\[\\e[29m\\]".to_string(),
+                    TermSequence::OverlineStart => "\\[\\e[53m\\]".to_string(),
+                    TermSequence::OverlineEnd => "\\[\\e[55m\\]".to_string(),
+                    TermSequence::BlinkStart => "\\[\\e[5m\\]".to_string(),
+                    TermSequence::BlinkEnd => "\\[\\e[25m\\]".to_string(),
                     TermSequence::ForegroundColor(color) => match color {
                         NamedColor::FullColor((r, g, b)) => {
                             format!("\\[\\e[38;2;{};{};{}m\\]", r, g, b)
@@ -167,6 +191,12 @@ impl TermSequence {
                     TermSequence::UnderlineEnd => "\x1b[24m".to_string(),
                     TermSequence::StandoutStart => "\x1b[7m".to_string(),
                     TermSequence::StandoutEnd => "\x1b[27m".to_string(),
+                    TermSequence::StrikethroughStart => "\x1b[9m".to_string(),
+                    TermSequence::StrikethroughEnd => "\x1b[29m".to_string(),
+                    TermSequence::OverlineStart => "\x1b[53m".to_string(),
+                    TermSequence::OverlineEnd => "\x1b[55m".to_string(),
+                    TermSequence::BlinkStart => "\x1b[5m".to_string(),
+                    TermSequence::BlinkEnd => "\x1b[25m".to_string(),
                     TermSequence::ForegroundColor(color) => match color {
                         NamedColor::FullColor((r, g, b)) => format!("\x1b[38;2;{};{};{}m", r, g, b),
                         NamedColor::Black => "\x1b[30m".to_string(),
@@ -232,6 +262,12 @@ impl TermSequence {
                     TermSequence::UnderlineEnd => "\x1b[24m".to_string(),
                     TermSequence::StandoutStart => "\x1b[7m".to_string(),
                     TermSequence::StandoutEnd => "\x1b[27m".to_string(),
+                    TermSequence::StrikethroughStart => "\x1b[9m".to_string(),
+                    TermSequence::StrikethroughEnd => "\x1b[29m".to_string(),
+                    TermSequence::OverlineStart => "\x1b[53m".to_string(),
+                    TermSequence::OverlineEnd => "\x1b[55m".to_string(),
+                    TermSequence::BlinkStart => "\x1b[5m".to_string(),
+                    TermSequence::BlinkEnd => "\x1b[25m".to_string(),
                     TermSequence::ForegroundColor(color) => match color {
                         NamedColor::FullColor((r, g, b)) => format!("\x1b[38;2;{};{};{}m", r, g, b),
                         NamedColor::Black => "\x1b[30m".to_string(),
@@ -281,6 +317,75 @@ impl TermSequence {
                     TermSequence::CurrentDirectoryTilde => "$( (Get-Location).Path -replace \"^$([System.Environment]::GetFolderPath('UserProfile'))\", \"~\")".to_string(),
                     TermSequence::PrivilegedIndicator => "#".to_string(), // For simplicity, use # for privileged. Check $IsWindows or $IsLinux for actual logic.
                     TermSequence::Newline => "`n".to_string(), // PowerShell newline
+                    TermSequence::Literal(s) => s.clone(),
+                }
+            }
+            TermType::Fish => {
+                // Fish shell uses ANSI escape sequences directly.
+                // Dynamic information placeholders use command substitutions.
+                match self {
+                    TermSequence::Percent => "%%".to_string(), // Fish: %% for single %
+                    TermSequence::BoldStart => "\x1b[1m".to_string(),
+                    TermSequence::BoldEnd => "\x1b[22m".to_string(),
+                    TermSequence::UnderlineStart => "\x1b[4m".to_string(),
+                    TermSequence::UnderlineEnd => "\x1b[24m".to_string(),
+                    TermSequence::StandoutStart => "\x1b[7m".to_string(),
+                    TermSequence::StandoutEnd => "\x1b[27m".to_string(),
+                    TermSequence::StrikethroughStart => "\x1b[9m".to_string(),
+                    TermSequence::StrikethroughEnd => "\x1b[29m".to_string(),
+                    TermSequence::OverlineStart => "\x1b[53m".to_string(),
+                    TermSequence::OverlineEnd => "\x1b[55m".to_string(),
+                    TermSequence::BlinkStart => "\x1b[5m".to_string(),
+                    TermSequence::BlinkEnd => "\x1b[25m".to_string(),
+                    TermSequence::ForegroundColor(color) => match color {
+                        NamedColor::FullColor((r, g, b)) => format!("\x1b[38;2;{};{};{}m", r, g, b),
+                        NamedColor::Black => "\x1b[30m".to_string(),
+                        NamedColor::Red => "\x1b[31m".to_string(),
+                        NamedColor::Green => "\x1b[32m".to_string(),
+                        NamedColor::Yellow => "\x1b[33m".to_string(),
+                        NamedColor::Blue => "\x1b[34m".to_string(),
+                        NamedColor::Magenta => "\x1b[35m".to_string(),
+                        NamedColor::Cyan => "\x1b[36m".to_string(),
+                        NamedColor::White => "\x1b[37m".to_string(),
+                        NamedColor::LightBlack => "\x1b[90m".to_string(),
+                        NamedColor::LightRed => "\x1b[91m".to_string(),
+                        NamedColor::LightGreen => "\x1b[92m".to_string(),
+                        NamedColor::LightYellow => "\x1b[93m".to_string(),
+                        NamedColor::LightBlue => "\x1b[94m".to_string(),
+                        NamedColor::LightMagenta => "\x1b[95m".to_string(),
+                        NamedColor::LightCyan => "\x1b[96m".to_string(),
+                        NamedColor::LightWhite => "\x1b[97m".to_string(),
+                        NamedColor::Code256(code) => format!("\x1b[38;5;{}m", code),
+                    },
+                    TermSequence::ForegroundColorEnd => "\x1b[39m".to_string(),
+                    TermSequence::BackgroundColor(color) => match color {
+                        NamedColor::FullColor((r, g, b)) => format!("\x1b[48;2;{};{};{}m", r, g, b),
+                        NamedColor::Black => "\x1b[40m".to_string(),
+                        NamedColor::Red => "\x1b[41m".to_string(),
+                        NamedColor::Green => "\x1b[42m".to_string(),
+                        NamedColor::Yellow => "\x1b[43m".to_string(),
+                        NamedColor::Blue => "\x1b[44m".to_string(),
+                        NamedColor::Magenta => "\x1b[45m".to_string(),
+                        NamedColor::Cyan => "\x1b[46m".to_string(),
+                        NamedColor::White => "\x1b[47m".to_string(),
+                        NamedColor::LightBlack => "\x1b[100m".to_string(),
+                        NamedColor::LightRed => "\x1b[101m".to_string(),
+                        NamedColor::LightGreen => "\x1b[102m".to_string(),
+                        NamedColor::LightYellow => "\x1b[103m".to_string(),
+                        NamedColor::LightBlue => "\x1b[104m".to_string(),
+                        NamedColor::LightMagenta => "\x1b[105m".to_string(),
+                        NamedColor::LightCyan => "\x1b[106m".to_string(),
+                        NamedColor::LightWhite => "\x1b[107m".to_string(),
+                        NamedColor::Code256(code) => format!("\x1b[48;5;{}m", code),
+                    },
+                    TermSequence::BackgroundColorEnd => "\x1b[49m".to_string(),
+                    TermSequence::ResetStyles => "\x1b[0m".to_string(),
+                    TermSequence::Username => "(whoami)".to_string(),
+                    TermSequence::HostnameShort => "(hostname -s)".to_string(),
+                    TermSequence::CurrentDirectoryFull => "(pwd)".to_string(),
+                    TermSequence::CurrentDirectoryTilde => "(prompt_pwd)".to_string(),
+                    TermSequence::PrivilegedIndicator => "$".to_string(),
+                    TermSequence::Newline => "\n".to_string(),
                     TermSequence::Literal(s) => s.clone(),
                 }
             }
