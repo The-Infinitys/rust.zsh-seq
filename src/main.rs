@@ -1,11 +1,5 @@
 use clap::Parser;
-use term_seq::{
-    builder::TermType,
-    colors::NamedColor,
-    TermPromptBuilder,
-    TermSequence,
-};
-
+use term_seq::{NamedColor, TermPromptBuilder, TermSequence, TermType};
 
 /// A simple CLI tool to generate terminal escape sequences.
 #[derive(Parser, Debug)]

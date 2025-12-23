@@ -1,9 +1,4 @@
-use term_seq::{
-    builder::TermType,
-    colors::NamedColor,
-    TermPromptBuilder,
-    TermSequence,
-};
+use term_seq::{NamedColor, TermPromptBuilder, TermSequence, TermType};
 
 fn main() {
     println!("--- Complex Prompt Example ---");
@@ -72,7 +67,6 @@ fn main() {
         .str(" ");
     let minimal_prompt = minimal_builder.build();
     println!("{}", minimal_prompt);
-
 
     println!("\n--- Color Code Example (256-color) ---");
     let mut color_code_builder = TermPromptBuilder::new(detected_term_type);

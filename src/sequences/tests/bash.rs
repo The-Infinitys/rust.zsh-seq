@@ -121,10 +121,28 @@ fn test_bash_literal_sequence() {
 
 #[test]
 fn test_bash_decoration_sequences() {
-    assert_eq!(TermSequence::StrikethroughStart.to_shell_string(TermType::Bash), "\\[\\e[9m\\]");
-    assert_eq!(TermSequence::StrikethroughEnd.to_shell_string(TermType::Bash), "\\[\\e[29m\\]");
-    assert_eq!(TermSequence::OverlineStart.to_shell_string(TermType::Bash), "\\[\\e[53m\\]");
-    assert_eq!(TermSequence::OverlineEnd.to_shell_string(TermType::Bash), "\\[\\e[55m\\]");
-    assert_eq!(TermSequence::BlinkStart.to_shell_string(TermType::Bash), "\\[\\e[5m\\]");
-    assert_eq!(TermSequence::BlinkEnd.to_shell_string(TermType::Bash), "\\[\\e[25m\\]");
+    assert_eq!(
+        TermSequence::StrikethroughStart.to_shell_string(TermType::Bash),
+        "\\[\\e[9m\\]"
+    );
+    assert_eq!(
+        TermSequence::StrikethroughEnd.to_shell_string(TermType::Bash),
+        "\\[\\e[29m\\]"
+    );
+    assert_eq!(
+        TermSequence::OverlineStart.to_shell_string(TermType::Bash),
+        "\\[\\e[53m\\]"
+    );
+    assert_eq!(
+        TermSequence::OverlineEnd.to_shell_string(TermType::Bash),
+        "\\[\\e[55m\\]"
+    );
+    assert_eq!(
+        TermSequence::BlinkStart.to_shell_string(TermType::Bash),
+        "\\[\\e[5m\\]"
+    );
+    assert_eq!(
+        TermSequence::BlinkEnd.to_shell_string(TermType::Bash),
+        "\\[\\e[25m\\]"
+    );
 }

@@ -1,6 +1,6 @@
-use crate::sequences::TermSequence;
-use crate::colors::NamedColor;
 use crate::builder::TermType;
+use crate::colors::NamedColor;
+use crate::sequences::TermSequence;
 
 #[test]
 fn test_fish_percent_sequence() {
@@ -9,8 +9,14 @@ fn test_fish_percent_sequence() {
 
 #[test]
 fn test_fish_bold_sequences() {
-    assert_eq!(TermSequence::BoldStart.to_shell_string(TermType::Fish), "\x1b[1m");
-    assert_eq!(TermSequence::BoldEnd.to_shell_string(TermType::Fish), "\x1b[22m");
+    assert_eq!(
+        TermSequence::BoldStart.to_shell_string(TermType::Fish),
+        "\x1b[1m"
+    );
+    assert_eq!(
+        TermSequence::BoldEnd.to_shell_string(TermType::Fish),
+        "\x1b[22m"
+    );
 }
 
 #[test]
@@ -27,12 +33,30 @@ fn test_fish_underline_sequences() {
 
 #[test]
 fn test_fish_decoration_sequences() {
-    assert_eq!(TermSequence::StrikethroughStart.to_shell_string(TermType::Fish), "\x1b[9m");
-    assert_eq!(TermSequence::StrikethroughEnd.to_shell_string(TermType::Fish), "\x1b[29m");
-    assert_eq!(TermSequence::OverlineStart.to_shell_string(TermType::Fish), "\x1b[53m");
-    assert_eq!(TermSequence::OverlineEnd.to_shell_string(TermType::Fish), "\x1b[55m");
-    assert_eq!(TermSequence::BlinkStart.to_shell_string(TermType::Fish), "\x1b[5m");
-    assert_eq!(TermSequence::BlinkEnd.to_shell_string(TermType::Fish), "\x1b[25m");
+    assert_eq!(
+        TermSequence::StrikethroughStart.to_shell_string(TermType::Fish),
+        "\x1b[9m"
+    );
+    assert_eq!(
+        TermSequence::StrikethroughEnd.to_shell_string(TermType::Fish),
+        "\x1b[29m"
+    );
+    assert_eq!(
+        TermSequence::OverlineStart.to_shell_string(TermType::Fish),
+        "\x1b[53m"
+    );
+    assert_eq!(
+        TermSequence::OverlineEnd.to_shell_string(TermType::Fish),
+        "\x1b[55m"
+    );
+    assert_eq!(
+        TermSequence::BlinkStart.to_shell_string(TermType::Fish),
+        "\x1b[5m"
+    );
+    assert_eq!(
+        TermSequence::BlinkEnd.to_shell_string(TermType::Fish),
+        "\x1b[25m"
+    );
 }
 
 #[test]

@@ -3,7 +3,6 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::colors::NamedColor;
 use crate::sequences::TermSequence;
-use crate::traits::{ShellPromptBuilder, TermSpecificBuilder}; // 自前のトレイトをインポート
 
 /// A type of the shell
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -20,12 +19,15 @@ impl TermType {
     pub fn detect() -> Self {
         // 1. Check for Tmux
         if let Ok(term_program) = std::env::var("TERM_PROGRAM")
-            && term_program.contains("tmux") {
-                return TermType::Tmux;
-            }
+            && term_program.contains("tmux")
+        {
+            return TermType::Tmux;
+        }
 
         // 2. Check for PowerShell
-        if std::env::var("PSModulePath").is_ok() || std::env::var("POWERSHELL_DISTRIBUTION_ID").is_ok() {
+        if std::env::var("PSModulePath").is_ok()
+            || std::env::var("POWERSHELL_DISTRIBUTION_ID").is_ok()
+        {
             return TermType::Pwsh;
         }
 
@@ -215,85 +217,6 @@ impl TermPromptBuilder {
     }
 }
 
-impl ShellPromptBuilder for TermPromptBuilder {
-    fn add_str(&mut self, text: &str) -> &mut Self {
-        self.str(text)
-    }
-    fn add_color(&mut self, color: NamedColor) -> &mut Self {
-        self.color(color)
-    }
-    fn add_color_bg(&mut self, color: NamedColor) -> &mut Self {
-        self.color_bg(color)
-    }
-    fn add_reset_styles(&mut self) -> &mut Self {
-        self.reset_styles()
-    }
-    fn add_bold(&mut self) -> &mut Self {
-        self.bold()
-    }
-    fn add_underline(&mut self) -> &mut Self {
-        self.underline()
-    }
-    fn add_standout(&mut self) -> &mut Self {
-        self.standout()
-    }
-    fn add_end_color(&mut self) -> &mut Self {
-        self.end_color()
-    }
-    fn add_end_color_bg(&mut self) -> &mut Self {
-        self.end_color_bg()
-    }
-    fn add_end_bold(&mut self) -> &mut Self {
-        self.end_bold()
-    }
-    fn add_end_underline(&mut self) -> &mut Self {
-        self.end_underline()
-    }
-    fn add_end_standout(&mut self) -> &mut Self {
-        self.end_standout()
-    }
-    fn add_connect(&mut self, other: &mut Self) -> &mut Self {
-        // <- other: &mut Self に変更
-        self.connect(other)
-    }
-    fn build(&self) -> String {
-        self.build()
-    }
-    fn text(&self) -> String {
-        self.text()
-    }
-}
-
-impl TermSpecificBuilder for TermPromptBuilder {
-    fn username(&mut self) -> &mut Self {
-        self.username()
-    }
-    fn hostname_short(&mut self) -> &mut Self {
-        self.hostname_short()
-    }
-    fn current_dir_full(&mut self) -> &mut Self {
-        self.current_dir_full()
-    }
-    fn current_dir_tilde(&mut self) -> &mut Self {
-        self.current_dir_tilde()
-    }
-    fn privileged_indicator(&mut self) -> &mut Self {
-        self.privileged_indicator()
-    }
-    fn newline(&mut self) -> &mut Self {
-        self.newline()
-    }
-    fn raw_text(&self) -> String {
-        self.raw_text()
-    }
-    fn len(&self) -> usize {
-        self.len()
-    }
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -322,9 +245,13 @@ mod tests {
         let old_shell = set_env("SHELL", "/bin/zsh");
         let old_term_program = set_env("TERM_PROGRAM", "iTerm.app"); // Simulate a common setup
         let old_psmodulepath = env::var("PSModulePath").ok();
-        unsafe { env::remove_var("PSModulePath"); }
+        unsafe {
+            env::remove_var("PSModulePath");
+        }
         let old_powershell_distribution_id = env::var("POWERSHELL_DISTRIBUTION_ID").ok();
-        unsafe { env::remove_var("POWERSHELL_DISTRIBUTION_ID"); }
+        unsafe {
+            env::remove_var("POWERSHELL_DISTRIBUTION_ID");
+        }
 
         assert_eq!(TermType::detect(), TermType::Zsh);
 
@@ -339,9 +266,13 @@ mod tests {
         let old_shell = set_env("SHELL", "/bin/bash");
         let old_term_program = set_env("TERM_PROGRAM", "");
         let old_psmodulepath = env::var("PSModulePath").ok();
-        unsafe { env::remove_var("PSModulePath"); }
+        unsafe {
+            env::remove_var("PSModulePath");
+        }
         let old_powershell_distribution_id = env::var("POWERSHELL_DISTRIBUTION_ID").ok();
-        unsafe { env::remove_var("POWERSHELL_DISTRIBUTION_ID"); }
+        unsafe {
+            env::remove_var("POWERSHELL_DISTRIBUTION_ID");
+        }
 
         assert_eq!(TermType::detect(), TermType::Bash);
 
@@ -356,9 +287,13 @@ mod tests {
         let old_shell = set_env("SHELL", "/usr/bin/fish");
         let old_term_program = set_env("TERM_PROGRAM", "");
         let old_psmodulepath = env::var("PSModulePath").ok();
-        unsafe { env::remove_var("PSModulePath"); }
+        unsafe {
+            env::remove_var("PSModulePath");
+        }
         let old_powershell_distribution_id = env::var("POWERSHELL_DISTRIBUTION_ID").ok();
-        unsafe { env::remove_var("POWERSHELL_DISTRIBUTION_ID"); }
+        unsafe {
+            env::remove_var("POWERSHELL_DISTRIBUTION_ID");
+        }
 
         assert_eq!(TermType::detect(), TermType::Fish);
 
@@ -373,9 +308,13 @@ mod tests {
         let old_shell = set_env("SHELL", "/bin/bash"); // Tmux often runs under bash
         let old_term_program = set_env("TERM_PROGRAM", "tmux");
         let old_psmodulepath = env::var("PSModulePath").ok();
-        unsafe { env::remove_var("PSModulePath"); }
+        unsafe {
+            env::remove_var("PSModulePath");
+        }
         let old_powershell_distribution_id = env::var("POWERSHELL_DISTRIBUTION_ID").ok();
-        unsafe { env::remove_var("POWERSHELL_DISTRIBUTION_ID"); }
+        unsafe {
+            env::remove_var("POWERSHELL_DISTRIBUTION_ID");
+        }
 
         assert_eq!(TermType::detect(), TermType::Tmux);
 
@@ -404,14 +343,21 @@ mod tests {
     fn test_detect_default_bash() {
         // Clear all relevant env vars to test default fallback
         let old_shell = env::var("SHELL").ok();
-        unsafe { env::remove_var("SHELL"); }
+        unsafe {
+            env::remove_var("SHELL");
+        }
         let old_term_program = env::var("TERM_PROGRAM").ok();
-        unsafe { env::remove_var("TERM_PROGRAM"); }
+        unsafe {
+            env::remove_var("TERM_PROGRAM");
+        }
         let old_psmodulepath = env::var("PSModulePath").ok();
-        unsafe { env::remove_var("PSModulePath"); }
+        unsafe {
+            env::remove_var("PSModulePath");
+        }
         let old_powershell_distribution_id = env::var("POWERSHELL_DISTRIBUTION_ID").ok();
-        unsafe { env::remove_var("POWERSHELL_DISTRIBUTION_ID"); }
-
+        unsafe {
+            env::remove_var("POWERSHELL_DISTRIBUTION_ID");
+        }
 
         assert_eq!(TermType::detect(), TermType::Bash);
 
@@ -421,4 +367,3 @@ mod tests {
         restore_env("POWERSHELL_DISTRIBUTION_ID", old_powershell_distribution_id);
     }
 }
-
