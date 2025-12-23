@@ -1,8 +1,8 @@
 mod builder;
 mod colors;
 mod sequences;
+mod shell;
 mod traits;
-
 pub use builder::TermPromptBuilder;
 pub use builder::TermType;
 pub use colors::NamedColor;

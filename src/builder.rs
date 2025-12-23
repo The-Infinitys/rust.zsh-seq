@@ -1,8 +1,10 @@
+use lazy_static::lazy_static;
 use regex::Regex;
-use unicode_width::UnicodeWidthStr;
+use unicode_width::UnicodeWidthStr; // 追加
 
 use crate::colors::NamedColor;
 use crate::sequences::TermSequence;
+use crate::shell;
 
 /// A type of the shell
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -46,6 +48,13 @@ impl TermType {
         TermType::Bash
     }
 }
+
+lazy_static! {
+    static ref ANSI_RE: Regex = Regex::new(r"\x1b\[[0-9;]*[mK]").unwrap();
+    static ref ZSH_RE: Regex =
+        Regex::new(r"%\{\x1b\[[0-9;]*[mK]%\}|%[FKkBUusnNmM~#?!\.\+\-l_]|%(\d\{[^}]*\})").unwrap();
+}
+
 /// A helper struct to build a prompt string
 pub struct TermPromptBuilder {
     term_type: TermType,
@@ -190,27 +199,61 @@ impl TermPromptBuilder {
         let term_str = self.build();
         match self.term_type {
             TermType::Zsh => {
-                let output = std::process::Command::new("term")
+                let output = std::process::Command::new("zsh")
                     .arg("-c")
                     .arg(format!("print -P \"{}\"", term_str))
                     .output();
 
                 match output {
                     Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
-                    Err(_) => self.text(), // Fallback to raw text if 'term' command fails
+                    Err(_) => term_str, // Fallback to the original string if command fails
                 }
             }
-            _ => {
-                // For Bash, Tmux, Pwsh, we cannot rely on 'term' command.
-                // We need to strip ANSI escape codes.
-                let re = Regex::new(r"\x1b\[[0-9;]*[mK]").unwrap();
-                re.replace_all(&term_str, "").to_string()
+            TermType::Bash => {
+                let output = std::process::Command::new("bash")
+                    .arg("-c")
+                    .arg(format!("echo -e \"{}\"", term_str))
+                    .output();
+                match output {
+                    Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
+                    Err(_) => term_str,
+                }
+            }
+            TermType::Fish => {
+                let output = std::process::Command::new("fish")
+                    .arg("-c")
+                    .arg(format!("printf \"{}\"", term_str))
+                    .output();
+                match output {
+                    Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
+                    Err(_) => term_str,
+                }
+            }
+            TermType::Pwsh => {
+                // Use Write-Output -NoNewline for better stdout capture
+                let output = std::process::Command::new("pwsh")
+                    .arg("-Command")
+                    .arg(format!("Write-Output -NoNewline \"{}\"", term_str))
+                    .output();
+                match output {
+                    Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
+                    Err(_) => term_str,
+                }
+            }
+            TermType::Tmux => {
+                // Tmux does not have a direct "print interpreted escape sequences to stdout" command.
+                // display-message -p only applies to tmux's internal display.
+                // For tmux, we'll just return the built string.
+                term_str
             }
         }
     }
     pub fn len(&self) -> usize {
-        let raw = self.raw_text();
-        UnicodeWidthStr::width(raw.as_str())
+        let raw = shell::print(&self.sequences);
+        let stripped_ansi = ANSI_RE.replace_all(&raw, "").to_string();
+        let stripped_all = ZSH_RE.replace_all(&stripped_ansi, "").to_string();
+
+        UnicodeWidthStr::width(stripped_all.as_str())
     }
     pub fn is_empty(&self) -> bool {
         self.len() == 0
