@@ -1,193 +1,141 @@
-use lazy_static::lazy_static;
 use regex::Regex;
-use unicode_width::UnicodeWidthStr; // 追加
+use unicode_width::UnicodeWidthStr;
 
 use crate::colors::NamedColor;
-use crate::sequences::TermSequence;
-use crate::shell;
-
-/// A type of the shell
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
-pub enum TermType {
-    #[default]
-    Zsh,
-    Bash,
-    Tmux,
-    Pwsh,
-    Fish,
-}
-
-impl TermType {
-    pub fn detect() -> Self {
-        // 1. Check for Tmux
-        if let Ok(term_program) = std::env::var("TERM_PROGRAM")
-            && term_program.contains("tmux")
-        {
-            return TermType::Tmux;
-        }
-
-        // 2. Check for PowerShell
-        if std::env::var("PSModulePath").is_ok()
-            || std::env::var("POWERSHELL_DISTRIBUTION_ID").is_ok()
-        {
-            return TermType::Pwsh;
-        }
-
-        // 3. Check for shell type from SHELL environment variable
-        if let Ok(shell) = std::env::var("SHELL") {
-            if shell.contains("zsh") {
-                return TermType::Zsh;
-            } else if shell.contains("bash") {
-                return TermType::Bash;
-            } else if shell.contains("fish") {
-                return TermType::Fish;
-            }
-        }
-
-        // Fallback to Bash as it's a common default on many systems
-        TermType::Bash
-    }
-}
-
-lazy_static! {
-    static ref ANSI_RE: Regex = Regex::new(r"\x1b\[[0-9;]*[mK]").unwrap();
-    static ref ZSH_RE: Regex =
-        Regex::new(r"%\{\x1b\[[0-9;]*[mK]%\}|%[FKkBUusnNmM~#?!\.\+\-l_]|%(\d\{[^}]*\})").unwrap();
-}
+use crate::sequences::ZshSequence;
+use crate::traits::{ShellPromptBuilder, ZshSpecificBuilder}; // 自前のトレイトをインポート
 
 /// A helper struct to build a prompt string
-pub struct TermPromptBuilder {
-    term_type: TermType,
-    sequences: Vec<TermSequence>,
+pub struct ZshPromptBuilder {
+    sequences: Vec<ZshSequence>,
 }
 
-impl Default for TermPromptBuilder {
+impl Default for ZshPromptBuilder {
     fn default() -> Self {
-        Self::new(TermType::default())
+        Self::new()
     }
 }
 
-impl TermPromptBuilder {
-    pub fn new(term_type: TermType) -> Self {
+impl ZshPromptBuilder {
+    pub fn new() -> Self {
         Self {
-            term_type,
             sequences: Vec::new(),
         }
     }
 
-    pub fn add_sequence(&mut self, sequence: TermSequence) -> &mut Self {
+    pub fn add_sequence(&mut self, sequence: ZshSequence) -> &mut Self {
         self.sequences.push(sequence);
         self
     }
 
     pub fn str(&mut self, text: &str) -> &mut Self {
-        self.sequences.push(TermSequence::Literal(text.to_string()));
+        self.sequences.push(ZshSequence::Literal(text.to_string()));
         self
     }
 
     pub fn color(&mut self, color: NamedColor) -> &mut Self {
-        self.sequences.push(TermSequence::ForegroundColor(color));
+        self.sequences.push(ZshSequence::ForegroundColor(color));
         self
     }
 
     pub fn color_bg(&mut self, color: NamedColor) -> &mut Self {
-        self.sequences.push(TermSequence::BackgroundColor(color));
+        self.sequences.push(ZshSequence::BackgroundColor(color));
         self
     }
 
     pub fn reset_styles(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::ResetStyles);
+        self.sequences.push(ZshSequence::ResetStyles);
         self
     }
 
     pub fn bold(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::BoldStart);
+        self.sequences.push(ZshSequence::BoldStart);
         self
     }
 
     pub fn underline(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::UnderlineStart);
+        self.sequences.push(ZshSequence::UnderlineStart);
         self
     }
 
     pub fn standout(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::StandoutStart);
+        self.sequences.push(ZshSequence::StandoutStart);
         self
     }
 
     pub fn end_color(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::ForegroundColorEnd);
+        self.sequences.push(ZshSequence::ForegroundColorEnd);
         self
     }
 
     pub fn end_color_bg(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::BackgroundColorEnd);
+        self.sequences.push(ZshSequence::BackgroundColorEnd);
         self
     }
 
     pub fn end_bold(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::BoldEnd);
+        self.sequences.push(ZshSequence::BoldEnd);
         self
     }
 
     pub fn end_underline(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::UnderlineEnd);
+        self.sequences.push(ZshSequence::UnderlineEnd);
         self
     }
 
     pub fn end_standout(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::StandoutEnd);
+        self.sequences.push(ZshSequence::StandoutEnd);
         self
     }
 
     pub fn username(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::Username);
+        self.sequences.push(ZshSequence::Username);
         self
     }
 
     pub fn hostname_short(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::HostnameShort);
+        self.sequences.push(ZshSequence::HostnameShort);
         self
     }
 
     pub fn current_dir_full(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::CurrentDirectoryFull);
+        self.sequences.push(ZshSequence::CurrentDirectoryFull);
         self
     }
 
     pub fn current_dir_tilde(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::CurrentDirectoryTilde);
+        self.sequences.push(ZshSequence::CurrentDirectoryTilde);
         self
     }
 
     pub fn privileged_indicator(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::PrivilegedIndicator);
+        self.sequences.push(ZshSequence::PrivilegedIndicator);
         self
     }
     pub fn newline(&mut self) -> &mut Self {
-        self.sequences.push(TermSequence::Newline);
+        self.sequences.push(ZshSequence::Newline);
         self
     }
-    pub fn connect(&mut self, other: &mut TermPromptBuilder) -> &mut Self {
+    pub fn connect(&mut self, other: &mut ZshPromptBuilder) -> &mut Self {
         self.sequences.append(&mut other.sequences);
         self
     }
     pub fn build(&self) -> String {
         self.sequences
             .iter()
-            .map(|seq| seq.to_shell_string(self.term_type))
+            .map(|seq| seq.to_string())
             .collect::<String>()
     }
 
     /// Extracts all literal text segments from the prompt builder and concatenates them.
     ///
-    /// This method collects all `TermSequence::Literal` contents into a single String,
-    /// ignoring all other Term escape sequences (style, color, dynamic info).
+    /// This method collects all `ZshSequence::Literal` contents into a single String,
+    /// ignoring all other Zsh escape sequences (style, color, dynamic info).
     pub fn text(&self) -> String {
         self.sequences
             .iter()
             .filter_map(|seq| {
-                if let TermSequence::Literal(s) = seq {
+                if let ZshSequence::Literal(s) = seq {
                     Some(s.clone())
                 } else {
                     None
@@ -196,217 +144,103 @@ impl TermPromptBuilder {
             .collect::<String>()
     }
     pub fn raw_text(&self) -> String {
-        let term_str = self.build();
-        match self.term_type {
-            TermType::Zsh => {
-                let output = std::process::Command::new("zsh")
-                    .arg("-c")
-                    .arg(format!("print -P \"{}\"", term_str))
-                    .output();
+        let zsh_str = self.build();
+        let output = std::process::Command::new("zsh")
+            .arg("-c")
+            .arg(format!("print -P \"{}\"", zsh_str))
+            .output();
 
-                match output {
-                    Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
-                    Err(_) => term_str, // Fallback to the original string if command fails
-                }
-            }
-            TermType::Bash => {
-                let output = std::process::Command::new("bash")
-                    .arg("-c")
-                    .arg(format!("echo -e \"{}\"", term_str))
-                    .output();
-                match output {
-                    Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
-                    Err(_) => term_str,
-                }
-            }
-            TermType::Fish => {
-                let output = std::process::Command::new("fish")
-                    .arg("-c")
-                    .arg(format!("printf \"{}\"", term_str))
-                    .output();
-                match output {
-                    Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
-                    Err(_) => term_str,
-                }
-            }
-            TermType::Pwsh => {
-                // Use Write-Output -NoNewline for better stdout capture
-                let output = std::process::Command::new("pwsh")
-                    .arg("-Command")
-                    .arg(format!("Write-Output -NoNewline \"{}\"", term_str))
-                    .output();
-                match output {
-                    Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
-                    Err(_) => term_str,
-                }
-            }
-            TermType::Tmux => {
-                // Tmux does not have a direct "print interpreted escape sequences to stdout" command.
-                // display-message -p only applies to tmux's internal display.
-                // For tmux, we'll just return the built string.
-                term_str
-            }
+        match output {
+            Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
+            Err(_) => self.text(),
         }
     }
     pub fn len(&self) -> usize {
-        let raw = shell::print(&self.sequences);
-        let stripped_ansi = ANSI_RE.replace_all(&raw, "").to_string();
-        let stripped_all = ZSH_RE.replace_all(&stripped_ansi, "").to_string();
-
-        UnicodeWidthStr::width(stripped_all.as_str())
+        let raw = self.raw_text();
+        let re = Regex::new(r"\x1b\[[0-9;]*[mK]").unwrap();
+        let s = re.replace_all(&raw, "");
+        UnicodeWidthStr::width(s.as_ref())
     }
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::env;
-
-    fn set_env(key: &str, value: &str) -> Option<String> {
-        let old_value = env::var(key).ok();
-        unsafe {
-            env::set_var(key, value);
-        }
-        old_value
+impl ShellPromptBuilder for ZshPromptBuilder {
+    fn add_str(&mut self, text: &str) -> &mut Self {
+        self.str(text)
     }
-
-    fn restore_env(key: &str, old_value: Option<String>) {
-        unsafe {
-            if let Some(value) = old_value {
-                env::set_var(key, value);
-            } else {
-                env::remove_var(key);
-            }
-        }
+    fn add_color(&mut self, color: NamedColor) -> &mut Self {
+        self.color(color)
     }
-
-    #[test]
-    fn test_detect_zsh() {
-        let old_shell = set_env("SHELL", "/bin/zsh");
-        let old_term_program = set_env("TERM_PROGRAM", "iTerm.app"); // Simulate a common setup
-        let old_psmodulepath = env::var("PSModulePath").ok();
-        unsafe {
-            env::remove_var("PSModulePath");
-        }
-        let old_powershell_distribution_id = env::var("POWERSHELL_DISTRIBUTION_ID").ok();
-        unsafe {
-            env::remove_var("POWERSHELL_DISTRIBUTION_ID");
-        }
-
-        assert_eq!(TermType::detect(), TermType::Zsh);
-
-        restore_env("SHELL", old_shell);
-        restore_env("TERM_PROGRAM", old_term_program);
-        restore_env("PSModulePath", old_psmodulepath);
-        restore_env("POWERSHELL_DISTRIBUTION_ID", old_powershell_distribution_id);
+    fn add_color_bg(&mut self, color: NamedColor) -> &mut Self {
+        self.color_bg(color)
     }
-
-    #[test]
-    fn test_detect_bash() {
-        let old_shell = set_env("SHELL", "/bin/bash");
-        let old_term_program = set_env("TERM_PROGRAM", "");
-        let old_psmodulepath = env::var("PSModulePath").ok();
-        unsafe {
-            env::remove_var("PSModulePath");
-        }
-        let old_powershell_distribution_id = env::var("POWERSHELL_DISTRIBUTION_ID").ok();
-        unsafe {
-            env::remove_var("POWERSHELL_DISTRIBUTION_ID");
-        }
-
-        assert_eq!(TermType::detect(), TermType::Bash);
-
-        restore_env("SHELL", old_shell);
-        restore_env("TERM_PROGRAM", old_term_program);
-        restore_env("PSModulePath", old_psmodulepath);
-        restore_env("POWERSHELL_DISTRIBUTION_ID", old_powershell_distribution_id);
+    fn add_reset_styles(&mut self) -> &mut Self {
+        self.reset_styles()
     }
-
-    #[test]
-    fn test_detect_fish() {
-        let old_shell = set_env("SHELL", "/usr/bin/fish");
-        let old_term_program = set_env("TERM_PROGRAM", "");
-        let old_psmodulepath = env::var("PSModulePath").ok();
-        unsafe {
-            env::remove_var("PSModulePath");
-        }
-        let old_powershell_distribution_id = env::var("POWERSHELL_DISTRIBUTION_ID").ok();
-        unsafe {
-            env::remove_var("POWERSHELL_DISTRIBUTION_ID");
-        }
-
-        assert_eq!(TermType::detect(), TermType::Fish);
-
-        restore_env("SHELL", old_shell);
-        restore_env("TERM_PROGRAM", old_term_program);
-        restore_env("PSModulePath", old_psmodulepath);
-        restore_env("POWERSHELL_DISTRIBUTION_ID", old_powershell_distribution_id);
+    fn add_bold(&mut self) -> &mut Self {
+        self.bold()
     }
-
-    #[test]
-    fn test_detect_tmux() {
-        let old_shell = set_env("SHELL", "/bin/bash"); // Tmux often runs under bash
-        let old_term_program = set_env("TERM_PROGRAM", "tmux");
-        let old_psmodulepath = env::var("PSModulePath").ok();
-        unsafe {
-            env::remove_var("PSModulePath");
-        }
-        let old_powershell_distribution_id = env::var("POWERSHELL_DISTRIBUTION_ID").ok();
-        unsafe {
-            env::remove_var("POWERSHELL_DISTRIBUTION_ID");
-        }
-
-        assert_eq!(TermType::detect(), TermType::Tmux);
-
-        restore_env("SHELL", old_shell);
-        restore_env("TERM_PROGRAM", old_term_program);
-        restore_env("PSModulePath", old_psmodulepath);
-        restore_env("POWERSHELL_DISTRIBUTION_ID", old_powershell_distribution_id);
+    fn add_underline(&mut self) -> &mut Self {
+        self.underline()
     }
-
-    #[test]
-    fn test_detect_pwsh() {
-        let old_shell = set_env("SHELL", "/bin/bash"); // Pwsh can run under bash
-        let old_term_program = set_env("TERM_PROGRAM", "");
-        let old_psmodulepath = set_env("PSModulePath", "/path/to/modules");
-        let old_powershell_distribution_id = set_env("POWERSHELL_DISTRIBUTION_ID", "Ubuntu");
-
-        assert_eq!(TermType::detect(), TermType::Pwsh);
-
-        restore_env("SHELL", old_shell);
-        restore_env("TERM_PROGRAM", old_term_program);
-        restore_env("PSModulePath", old_psmodulepath);
-        restore_env("POWERSHELL_DISTRIBUTION_ID", old_powershell_distribution_id);
+    fn add_standout(&mut self) -> &mut Self {
+        self.standout()
     }
+    fn add_end_color(&mut self) -> &mut Self {
+        self.end_color()
+    }
+    fn add_end_color_bg(&mut self) -> &mut Self {
+        self.end_color_bg()
+    }
+    fn add_end_bold(&mut self) -> &mut Self {
+        self.end_bold()
+    }
+    fn add_end_underline(&mut self) -> &mut Self {
+        self.end_underline()
+    }
+    fn add_end_standout(&mut self) -> &mut Self {
+        self.end_standout()
+    }
+    fn add_connect(&mut self, other: &mut Self) -> &mut Self {
+        // <- other: &mut Self に変更
+        self.connect(other)
+    }
+    fn build(&self) -> String {
+        self.build()
+    }
+    fn text(&self) -> String {
+        self.text()
+    }
+}
 
-    #[test]
-    fn test_detect_default_bash() {
-        // Clear all relevant env vars to test default fallback
-        let old_shell = env::var("SHELL").ok();
-        unsafe {
-            env::remove_var("SHELL");
-        }
-        let old_term_program = env::var("TERM_PROGRAM").ok();
-        unsafe {
-            env::remove_var("TERM_PROGRAM");
-        }
-        let old_psmodulepath = env::var("PSModulePath").ok();
-        unsafe {
-            env::remove_var("PSModulePath");
-        }
-        let old_powershell_distribution_id = env::var("POWERSHELL_DISTRIBUTION_ID").ok();
-        unsafe {
-            env::remove_var("POWERSHELL_DISTRIBUTION_ID");
-        }
-
-        assert_eq!(TermType::detect(), TermType::Bash);
-
-        restore_env("SHELL", old_shell);
-        restore_env("TERM_PROGRAM", old_term_program);
-        restore_env("PSModulePath", old_psmodulepath);
-        restore_env("POWERSHELL_DISTRIBUTION_ID", old_powershell_distribution_id);
+impl ZshSpecificBuilder for ZshPromptBuilder {
+    fn username(&mut self) -> &mut Self {
+        self.username()
+    }
+    fn hostname_short(&mut self) -> &mut Self {
+        self.hostname_short()
+    }
+    fn current_dir_full(&mut self) -> &mut Self {
+        self.current_dir_full()
+    }
+    fn current_dir_tilde(&mut self) -> &mut Self {
+        self.current_dir_tilde()
+    }
+    fn privileged_indicator(&mut self) -> &mut Self {
+        self.privileged_indicator()
+    }
+    fn newline(&mut self) -> &mut Self {
+        self.newline()
+    }
+    fn raw_text(&self) -> String {
+        self.raw_text()
+    }
+    fn len(&self) -> usize {
+        self.len()
+    }
+    fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }

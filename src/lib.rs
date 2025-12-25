@@ -1,10 +1,9 @@
-mod builder;
-mod colors;
-mod sequences;
-mod shell;
-mod traits;
-pub use builder::TermPromptBuilder;
-pub use builder::TermType;
+pub mod builder;
+pub mod colors;
+pub mod sequences;
+pub mod traits;
+
+pub use builder::ZshPromptBuilder;
 pub use colors::NamedColor;
-pub use sequences::TermSequence;
-pub use traits::ColoredTermPrompt;
+pub use sequences::ZshSequence;
+pub use traits::ColoredZshPrompt;

@@ -1,6 +1,6 @@
 use std::fmt;
 
-/// Represents a color for Term prompt sequences (named colors or 256-color codes).
+/// Represents a color for Zsh prompt sequences (named colors or 256-color codes).
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum NamedColor {
     Black,
@@ -50,8 +50,8 @@ impl fmt::Display for NamedColor {
 }
 
 impl NamedColor {
-    /// Converts the NamedColor enum to its string representation for Term.
-    pub fn to_term_string(&self) -> String {
+    /// Converts the NamedColor enum to its string representation for Zsh.
+    pub fn to_zsh_string(&self) -> String {
         match self {
             NamedColor::Black => "black".to_string(),
             NamedColor::Red => "red".to_string(),
@@ -72,10 +72,10 @@ impl NamedColor {
             NamedColor::Code256(code) => code.to_string(),
             NamedColor::FullColor((_, _, _)) => {
                 // NamedColor::FullColorはエスケープシーケンスとして処理されるため、
-                // このメソッドで直接Term文字列に変換されるべきではない。
+                // このメソッドで直接Zsh文字列に変換されるべきではない。
                 // したがって、ここに到達することは論理エラーを示す。
                 panic!(
-                    "NamedColor::FullColor should be handled as an escape sequence, not converted to a Term string directly."
+                    "NamedColor::FullColor should be handled as an escape sequence, not converted to a Zsh string directly."
                 );
             }
         }
