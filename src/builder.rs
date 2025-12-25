@@ -3,7 +3,6 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::colors::NamedColor;
 use crate::sequences::ZshSequence;
-use crate::traits::{ShellPromptBuilder, ZshSpecificBuilder}; // 自前のトレイトをインポート
 
 /// A helper struct to build a prompt string
 pub struct ZshPromptBuilder {
@@ -23,101 +22,101 @@ impl ZshPromptBuilder {
         }
     }
 
-    pub fn add_sequence(&mut self, sequence: ZshSequence) -> &mut Self {
+    pub fn add_sequence(mut self, sequence: ZshSequence) -> Self {
         self.sequences.push(sequence);
         self
     }
 
-    pub fn str(&mut self, text: &str) -> &mut Self {
+    pub fn str(mut self, text: &str) -> Self {
         self.sequences.push(ZshSequence::Literal(text.to_string()));
         self
     }
 
-    pub fn color(&mut self, color: NamedColor) -> &mut Self {
+    pub fn color(mut self, color: NamedColor) -> Self {
         self.sequences.push(ZshSequence::ForegroundColor(color));
         self
     }
 
-    pub fn color_bg(&mut self, color: NamedColor) -> &mut Self {
+    pub fn color_bg(mut self, color: NamedColor) -> Self {
         self.sequences.push(ZshSequence::BackgroundColor(color));
         self
     }
 
-    pub fn reset_styles(&mut self) -> &mut Self {
+    pub fn reset_styles(mut self) -> Self {
         self.sequences.push(ZshSequence::ResetStyles);
         self
     }
 
-    pub fn bold(&mut self) -> &mut Self {
+    pub fn bold(mut self) -> Self {
         self.sequences.push(ZshSequence::BoldStart);
         self
     }
 
-    pub fn underline(&mut self) -> &mut Self {
+    pub fn underline(mut self) -> Self {
         self.sequences.push(ZshSequence::UnderlineStart);
         self
     }
 
-    pub fn standout(&mut self) -> &mut Self {
+    pub fn standout(mut self) -> Self {
         self.sequences.push(ZshSequence::StandoutStart);
         self
     }
 
-    pub fn end_color(&mut self) -> &mut Self {
+    pub fn end_color(mut self) -> Self {
         self.sequences.push(ZshSequence::ForegroundColorEnd);
         self
     }
 
-    pub fn end_color_bg(&mut self) -> &mut Self {
+    pub fn end_color_bg(mut self) -> Self {
         self.sequences.push(ZshSequence::BackgroundColorEnd);
         self
     }
 
-    pub fn end_bold(&mut self) -> &mut Self {
+    pub fn end_bold(mut self) -> Self {
         self.sequences.push(ZshSequence::BoldEnd);
         self
     }
 
-    pub fn end_underline(&mut self) -> &mut Self {
+    pub fn end_underline(mut self) -> Self {
         self.sequences.push(ZshSequence::UnderlineEnd);
         self
     }
 
-    pub fn end_standout(&mut self) -> &mut Self {
+    pub fn end_standout(mut self) -> Self {
         self.sequences.push(ZshSequence::StandoutEnd);
         self
     }
 
-    pub fn username(&mut self) -> &mut Self {
+    pub fn username(mut self) -> Self {
         self.sequences.push(ZshSequence::Username);
         self
     }
 
-    pub fn hostname_short(&mut self) -> &mut Self {
+    pub fn hostname_short(mut self) -> Self {
         self.sequences.push(ZshSequence::HostnameShort);
         self
     }
 
-    pub fn current_dir_full(&mut self) -> &mut Self {
+    pub fn current_dir_full(mut self) -> Self {
         self.sequences.push(ZshSequence::CurrentDirectoryFull);
         self
     }
 
-    pub fn current_dir_tilde(&mut self) -> &mut Self {
+    pub fn current_dir_tilde(mut self) -> Self {
         self.sequences.push(ZshSequence::CurrentDirectoryTilde);
         self
     }
 
-    pub fn privileged_indicator(&mut self) -> &mut Self {
+    pub fn privileged_indicator(mut self) -> Self {
         self.sequences.push(ZshSequence::PrivilegedIndicator);
         self
     }
-    pub fn newline(&mut self) -> &mut Self {
+    pub fn newline(mut self) -> Self {
         self.sequences.push(ZshSequence::Newline);
         self
     }
-    pub fn connect(&mut self, other: &mut ZshPromptBuilder) -> &mut Self {
-        self.sequences.append(&mut other.sequences);
+    pub fn connect(mut self, other: Self) -> Self {
+        self.sequences.extend(other.sequences);
         self
     }
     pub fn build(&self) -> String {
@@ -161,86 +160,118 @@ impl ZshPromptBuilder {
         let s = re.replace_all(&raw, "");
         UnicodeWidthStr::width(s.as_ref())
     }
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
 }
 
-impl ShellPromptBuilder for ZshPromptBuilder {
-    fn add_str(&mut self, text: &str) -> &mut Self {
-        self.str(text)
-    }
-    fn add_color(&mut self, color: NamedColor) -> &mut Self {
-        self.color(color)
-    }
-    fn add_color_bg(&mut self, color: NamedColor) -> &mut Self {
-        self.color_bg(color)
-    }
-    fn add_reset_styles(&mut self) -> &mut Self {
-        self.reset_styles()
-    }
-    fn add_bold(&mut self) -> &mut Self {
-        self.bold()
-    }
-    fn add_underline(&mut self) -> &mut Self {
-        self.underline()
-    }
-    fn add_standout(&mut self) -> &mut Self {
-        self.standout()
-    }
-    fn add_end_color(&mut self) -> &mut Self {
-        self.end_color()
-    }
-    fn add_end_color_bg(&mut self) -> &mut Self {
-        self.end_color_bg()
-    }
-    fn add_end_bold(&mut self) -> &mut Self {
-        self.end_bold()
-    }
-    fn add_end_underline(&mut self) -> &mut Self {
-        self.end_underline()
-    }
-    fn add_end_standout(&mut self) -> &mut Self {
-        self.end_standout()
-    }
-    fn add_connect(&mut self, other: &mut Self) -> &mut Self {
-        // <- other: &mut Self に変更
-        self.connect(other)
-    }
-    fn build(&self) -> String {
-        self.build()
-    }
-    fn text(&self) -> String {
-        self.text()
-    }
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::colors::NamedColor;
 
-impl ZshSpecificBuilder for ZshPromptBuilder {
-    fn username(&mut self) -> &mut Self {
-        self.username()
+    #[test]
+    fn test_builder_simple() {
+        let prompt = ZshPromptBuilder::new()
+            .str("Hello, ")
+            .username()
+            .str("! ")
+            .current_dir_tilde()
+            .str(" ")
+            .privileged_indicator()
+            .build();
+        assert_eq!(prompt, "Hello, %n! %~ %#");
     }
-    fn hostname_short(&mut self) -> &mut Self {
-        self.hostname_short()
+
+    #[test]
+    fn test_builder_colors_and_styles() {
+        let prompt = ZshPromptBuilder::new()
+            .bold()
+            .color(NamedColor::Green)
+            .str("Success: ")
+            .end_color()
+            .end_bold()
+            .current_dir_tilde()
+            .build();
+        assert_eq!(prompt, "%B%F{green}Success: %f%b%~");
     }
-    fn current_dir_full(&mut self) -> &mut Self {
-        self.current_dir_full()
+
+    #[test]
+    fn test_builder_chaining() {
+        let prompt = ZshPromptBuilder::new()
+            .color(NamedColor::Red)
+            .str("ERROR: ")
+            .end_color()
+            .bold()
+            .str("Something went wrong at ")
+            .current_dir_full()
+            .end_bold()
+            .build();
+        assert_eq!(prompt, "%F{red}ERROR: %f%BSomething went wrong at %/%b");
     }
-    fn current_dir_tilde(&mut self) -> &mut Self {
-        self.current_dir_tilde()
+
+    #[test]
+    fn test_builder_with_full_color() {
+        let prompt = ZshPromptBuilder::new()
+            .color(NamedColor::FullColor((100, 200, 255)))
+            .str("Custom RGB")
+            .reset_styles()
+            .build();
+        assert_eq!(prompt, "%{\x1b[38;2;100;200;255m%}Custom RGB%{\x1b[0m%}");
     }
-    fn privileged_indicator(&mut self) -> &mut Self {
-        self.privileged_indicator()
+
+    #[test]
+    fn test_extract_literal_text_only_literal() {
+        let builder = ZshPromptBuilder::new().str("hello").str(" world");
+        assert_eq!(builder.text(), "hello world");
     }
-    fn newline(&mut self) -> &mut Self {
-        self.newline()
+
+    #[test]
+    fn test_extract_literal_text_with_zsh_sequences() {
+        let builder = ZshPromptBuilder::new()
+            .bold()
+            .color(NamedColor::Red)
+            .str("Warning: ")
+            .hostname_short()
+            .str(" at ")
+            .current_dir_full()
+            .end_color();
+        assert_eq!(builder.text(), "Warning:  at ");
     }
-    fn raw_text(&self) -> String {
-        self.raw_text()
+
+    #[test]
+    fn test_extract_literal_text_with_multibyte() {
+        let builder = ZshPromptBuilder::new().str("日本語").str("text");
+        assert_eq!(builder.text(), "日本語text");
     }
-    fn len(&self) -> usize {
-        self.len()
+
+    #[test]
+    fn test_extract_literal_text_empty() {
+        let builder = ZshPromptBuilder::new()
+            .bold()
+            .username()
+            .privileged_indicator();
+        assert_eq!(builder.text(), "");
     }
-    fn is_empty(&self) -> bool {
-        self.len() == 0
+    #[test]
+    fn test_builder_connect() {
+        let part1 = ZshPromptBuilder::new()
+            .color(NamedColor::Blue)
+            .str("[")
+            .end_color();
+
+        let part2 = ZshPromptBuilder::new().username().str("@").hostname_short();
+
+        let part3 = ZshPromptBuilder::new()
+            .color(NamedColor::Blue)
+            .str("]")
+            .end_color();
+
+        // 3つのビルダーを結合
+        let prompt = ZshPromptBuilder::new()
+            .connect(part1)
+            .connect(part2)
+            .connect(part3)
+            .build();
+
+        // 期待される出力: %F{blue}[%f%n@%m%F{blue}]%f
+        assert_eq!(prompt, "%F{blue}[%f%n@%m%F{blue}]%f");
     }
 }
