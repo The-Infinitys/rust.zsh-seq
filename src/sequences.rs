@@ -101,11 +101,12 @@ impl ZshSequence {
                 let home = env::var("HOME").map(std::path::PathBuf::from).ok();
 
                 if let Some(h) = home
-                    && let Ok(stripped) = pwd.strip_prefix(h) {
-                        return format!("~/{}", stripped.display())
-                            .trim_end_matches('/')
-                            .to_string();
-                    }
+                    && let Ok(stripped) = pwd.strip_prefix(h)
+                {
+                    return format!("~/{}", stripped.display())
+                        .trim_end_matches('/')
+                        .to_string();
+                }
                 pwd.display().to_string().trim_end_matches('/').to_string()
             }
 

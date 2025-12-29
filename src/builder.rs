@@ -22,7 +22,7 @@ impl ZshPromptBuilder {
         }
     }
 
-    pub fn add_sequence(mut self, sequence: ZshSequence) -> Self {
+    pub fn seq(mut self, sequence: ZshSequence) -> Self {
         self.sequences.push(sequence);
         self
     }
@@ -113,6 +113,10 @@ impl ZshPromptBuilder {
     }
     pub fn newline(mut self) -> Self {
         self.sequences.push(ZshSequence::Newline);
+        self
+    }
+    pub fn chain(mut self, list: Vec<ZshSequence>) -> Self {
+        self.sequences.extend(list);
         self
     }
     pub fn connect(mut self, other: Self) -> Self {
