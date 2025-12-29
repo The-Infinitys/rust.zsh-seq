@@ -212,9 +212,32 @@ impl fmt::Display for ZshSequence {
 
 #[cfg(test)]
 mod tests {
+    use std::process::Command;
+
     use super::*;
     use crate::colors::NamedColor; // NamedColorをインポート
+    fn expand_with_zsh(input: &str) -> String {
+        let output = Command::new("zsh")
+            .arg("-c")
+            .arg(format!("print -P '{}'", input))
+            .output()
+            .expect("Failed to execute zsh");
+        String::from_utf8_lossy(&output.stdout)
+            .trim_end_matches('\n')
+            .to_string()
+    }
 
+    fn expand_with_bash(input: &str) -> String {
+        let output = Command::new("bash")
+            .arg("-c")
+            .arg("echo -ne \"${PS1@P}\"")
+            .env("PS1", input)
+            .output()
+            .expect("Failed to execute bash");
+        String::from_utf8_lossy(&output.stdout)
+            .trim_end_matches('\n')
+            .to_string()
+    }
     #[test]
     fn test_percent_sequence() {
         assert_eq!(ZshSequence::Percent.to_string(), "%%");
@@ -294,5 +317,43 @@ mod tests {
             ZshSequence::Literal("hello".to_string()).to_string(),
             "hello"
         );
+    }
+    #[test]
+    fn test_all_seqs_diff() {
+        let all_sequences = vec![
+            ZshSequence::Percent,
+            ZshSequence::BoldStart,
+            ZshSequence::BoldEnd,
+            ZshSequence::UnderlineStart,
+            ZshSequence::UnderlineEnd,
+            ZshSequence::StandoutStart,
+            ZshSequence::StandoutEnd,
+            ZshSequence::ForegroundColor(NamedColor::Red),
+            ZshSequence::ForegroundColorEnd,
+            ZshSequence::BackgroundColor(NamedColor::Blue),
+            ZshSequence::BackgroundColorEnd,
+            ZshSequence::ResetStyles,
+            ZshSequence::Username,
+            ZshSequence::HostnameShort,
+            ZshSequence::CurrentDirectoryFull,
+            ZshSequence::CurrentDirectoryTilde,
+            ZshSequence::PrivilegedIndicator,
+            ZshSequence::Newline,
+            ZshSequence::Literal("Hello 日本語".to_string()),
+        ];
+        let diff_sequences: Vec<ZshSequence> = all_sequences
+            .into_iter()
+            .filter(|seq| {
+                let raw = seq.raw();
+                let bash = seq.bash();
+                let bash = expand_with_bash(&bash);
+                let zsh = seq.zsh();
+                let zsh = expand_with_zsh(&zsh);
+                !(raw == zsh && raw == bash)
+            })
+            .collect();
+        if !diff_sequences.is_empty() {
+            panic!("diffs:{:#?}", diff_sequences);
+        }
     }
 }

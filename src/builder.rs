@@ -125,7 +125,12 @@ impl ZshPromptBuilder {
             .map(|seq| seq.to_string())
             .collect::<String>()
     }
-
+    pub fn bash_build(&self)->String{
+        self.sequences
+            .iter()
+            .map(|seq| seq.bash())
+            .collect::<String>()    
+    }
     /// Extracts all literal text segments from the prompt builder and concatenates them.
     ///
     /// This method collects all `ZshSequence::Literal` contents into a single String,
@@ -151,7 +156,7 @@ impl ZshPromptBuilder {
     }
     pub fn len(&self) -> usize {
         let raw = self.raw_text();
-        let re = Regex::new(r"\x1b\[[0-9;]*[mK]").unwrap();
+        let re = Regex::new(r"[\u001b\u009b]\[[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]|[\u001b\u009b][()][A-Z0-9]").unwrap();
         let s = re.replace_all(&raw, "");
         UnicodeWidthStr::width(s.as_ref())
     }
@@ -272,4 +277,106 @@ mod tests {
         // 期待される出力: %F{blue}[%f%n@%m%F{blue}]%f
         assert_eq!(prompt, "%F{blue}[%f%n@%m%F{blue}]%f");
     }
+}
+
+#[cfg(test)]
+mod len_tests {
+    use super::*;
+    use crate::colors::NamedColor;
+
+    #[test]
+    fn test_len_simple_text() {
+        let builder = ZshPromptBuilder::new().str("hello");
+        assert_eq!(builder.len(), 5);
+    }
+
+    #[test]
+    fn test_len_with_colors_and_styles() {
+        // 色や太字が含まれていても、可視文字数のみをカウントすべき
+        let builder = ZshPromptBuilder::new()
+            .bold()
+            .color(NamedColor::Red)
+            .str("Alert")
+            .reset_styles();
+        assert_eq!(builder.len(), 5);
+    }
+
+    #[test]
+    fn test_len_with_full_color_rgb() {
+        let builder = ZshPromptBuilder::new()
+            .color(NamedColor::FullColor((255, 0, 0)))
+            .str("RGB")
+            .reset_styles();
+        // %{\x1b[38;2;...m%} は 0 幅として計算されるべき
+        assert_eq!(builder.len(), 3);
+    }
+
+    #[test]
+    fn test_len_with_multibyte() {
+        // 日本語（全角）は unicode-width により 2 幅として計算される
+        let builder = ZshPromptBuilder::new().str("こんにちは");
+        assert_eq!(builder.len(), 10); // 2 * 5 = 10
+    }
+
+    #[test]
+    fn test_len_with_mixed_content() {
+        let builder = ZshPromptBuilder::new()
+            .color(NamedColor::Blue)
+            .str("Dir: ")
+            .reset_styles()
+            .str("🚀"); // 絵文字
+        // "Dir: " (5) + "🚀" (2) = 7
+        assert_eq!(builder.len(), 7);
+    }
+
+    #[test]
+    fn test_len_dynamic_content() {
+        // Username や CurrentDir は実行環境に依存するため、
+        // raw() の結果と直接比較して整合性を確認する
+        let builder = ZshPromptBuilder::new().username();
+        let expected_raw = builder.raw_text();
+        assert_eq!(builder.len(), UnicodeWidthStr::width(expected_raw.as_str()));
+    }
+
+    #[test]
+    fn test_len_with_newline() {
+        // 改行が含まれる場合、表示幅の計算からは除外するのが一般的（プロンプトの長さ計算）
+        let builder = ZshPromptBuilder::new().str("Line1").newline().str("Line2");
+        assert_eq!(builder.len(), 10);
+    }
+}
+
+#[test]
+fn test_actual_zsh_expansion() {
+    let builder = ZshPromptBuilder::new().username();
+    let zsh_prompt = builder.build(); // 例: "%n"
+
+    // 実際に zsh を起動してプロンプトを展開させる
+    let output = std::process::Command::new("zsh")
+        .arg("-c")
+        .arg(format!("print -P '{}'", zsh_prompt)) // -P はプロンプト展開フラグ
+        .output()
+        .expect("Failed to execute zsh");
+
+    let expanded_zsh = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    
+    // Rust側の raw() 実装と、本物の zsh の展開結果を比較
+    assert_eq!(builder.raw_text(), expanded_zsh);
+}
+
+#[test]
+fn test_actual_bash_expansion() {
+    // bashの場合、PS1を展開させるのは少し工夫が必要
+    let builder = ZshPromptBuilder::new().username();
+    let bash_prompt = builder.bash_build(); // \u などを含む文字列
+
+    let output = std::process::Command::new("bash")
+        .arg("-c")
+        .arg(format!("echo -e \"${{PS1@P}}\"")) // ${PS1@P} はプロンプト展開
+        .env("PS1", bash_prompt)
+        .output()
+        .expect("Failed to execute bash");
+
+    let expanded_bash = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    assert_eq!(builder.raw_text(), expanded_bash);
 }
