@@ -45,7 +45,33 @@ pub enum ZshSequence {
 impl ZshSequence {
     pub fn raw_text(&self) -> String {
         match self {
-            ZshSequence::Literal(s) => s.clone(),
+            ZshSequence::Literal(s) => {
+                let mut result = String::new();
+                let mut chars = s.chars().peekable();
+
+                while let Some(c) = chars.next() {
+                    if c == '%' {
+                        match chars.peek() {
+                            Some(&'%') => {
+                                // %% の場合は、1つの % をリテラルとして残す
+                                result.push('%');
+                                chars.next(); // 2つ目の % を消費
+                            }
+                            Some(_) => {
+                                // % の後に文字がある場合、その文字も一緒に削除
+                                chars.next(); // 次の1文字を読み飛ばす
+                            }
+                            None => {
+                                // 末尾が % 単体で終わっている場合は、その % を削除
+                                continue;
+                            }
+                        }
+                    } else {
+                        result.push(c);
+                    }
+                }
+                result
+            }
             ZshSequence::Percent => "%".to_string(),
 
             // ユーザー名: $USER を取得

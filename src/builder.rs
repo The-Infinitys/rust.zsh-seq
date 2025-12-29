@@ -156,10 +156,9 @@ impl ZshPromptBuilder {
         self.sequences
             .iter()
             .map(|seg| {
-                if let ZshSequence::Literal(s) = seg {
-                    eprintln!("{}", s)
-                }
-                seg.raw_text()
+                let s = seg.raw_text();
+                eprintln!("{}", s);
+                s
             })
             .collect::<String>()
     }
