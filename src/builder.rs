@@ -143,19 +143,29 @@ impl ZshPromptBuilder {
             .collect::<String>()
     }
     pub fn raw_text(&self) -> String {
-        let zsh_str = self.build();
-        let output = std::process::Command::new("zsh")
-            .arg("-c")
-            .arg(format!("print -P \"{}\"", zsh_str))
-            .output();
+        // let zsh_str = self.build();
+        // let output = std::process::Command::new("zsh")
+        //     .arg("-c")
+        //     .arg(format!("print -P \"{}\"", zsh_str))
+        //     .output();
 
-        match output {
-            Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
-            Err(_) => self.text(),
-        }
+        // match output {
+        //     Ok(out) => String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
+        //     Err(_) => self.text(),
+        // }
+        self.sequences
+            .iter()
+            .map(|seg| {
+                if let ZshSequence::Literal(s) = seg {
+                    eprintln!("{}", s)
+                }
+                seg.raw_text()
+            })
+            .collect::<String>()
     }
     pub fn len(&self) -> usize {
         let raw = self.raw_text();
+        eprint!("{}", raw);
         let re = Regex::new(r"\x1b\[[0-9;]*[mK]").unwrap();
         let s = re.replace_all(&raw, "");
         UnicodeWidthStr::width(s.as_ref())

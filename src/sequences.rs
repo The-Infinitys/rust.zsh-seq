@@ -1,5 +1,5 @@
 use crate::colors::NamedColor;
-
+use std::env;
 /// Represents a Zsh prompt sequence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ZshSequence {
@@ -42,11 +42,86 @@ pub enum ZshSequence {
     /// Custom string that can be inserted directly.
     Literal(String),
 }
+impl ZshSequence {
+    pub fn raw_text(&self) -> String {
+        match self {
+            ZshSequence::Literal(s) => s.clone(),
+            ZshSequence::Percent => "%".to_string(),
 
+            // ユーザー名: $USER を取得
+            ZshSequence::Username => users::get_current_username()
+                .unwrap()
+                .into_string()
+                .unwrap(),
+
+            // ホスト名: hostname_short (最初のドットまで)
+            ZshSequence::HostnameShort => hostname::get()
+                .map(|h| {
+                    h.to_string_lossy()
+                        .split('.')
+                        .next()
+                        .unwrap_or("localhost")
+                        .to_string()
+                })
+                .unwrap_or_else(|_| {
+                    env::var("HOSTNAME")
+                        .map(|h| h.split('.').next().unwrap_or("localhost").to_string())
+                        .unwrap_or_else(|_| "localhost".to_string())
+                }),
+
+            // カレントディレクトリ (Tildeあり)
+            ZshSequence::CurrentDirectoryTilde => {
+                let pwd = env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+                let home = env::var("HOME").map(std::path::PathBuf::from).ok();
+
+                if let Some(h) = home {
+                    if let Ok(stripped) = pwd.strip_prefix(h) {
+                        return format!("~/{}", stripped.display())
+                            .trim_end_matches('/')
+                            .to_string();
+                    }
+                }
+                pwd.display().to_string().trim_end_matches('/').to_string()
+            }
+
+            // カレントディレクトリ (Full)
+            ZshSequence::CurrentDirectoryFull => env::current_dir()
+                .map(|p| p.display().to_string().trim_end_matches('/').to_string())
+                .unwrap_or_else(|_| "/".to_string()),
+
+            // 特権インジケータ
+            ZshSequence::PrivilegedIndicator => {
+                // UIDが0なら #、それ以外は % (Unix系前提)
+                if users::get_current_uid() == 0 {
+                    "#"
+                } else {
+                    "%"
+                }
+                .to_string()
+            }
+
+            // 改行
+            ZshSequence::Newline => "\n".to_string(),
+
+            // スタイル・色関連はテキストとしては「空」
+            ZshSequence::BoldStart
+            | ZshSequence::BoldEnd
+            | ZshSequence::UnderlineStart
+            | ZshSequence::UnderlineEnd
+            | ZshSequence::StandoutStart
+            | ZshSequence::StandoutEnd
+            | ZshSequence::ForegroundColor(_)
+            | ZshSequence::ForegroundColorEnd
+            | ZshSequence::BackgroundColor(_)
+            | ZshSequence::BackgroundColorEnd
+            | ZshSequence::ResetStyles => String::new(),
+        }
+    }
+}
 impl std::fmt::Display for ZshSequence {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ZshSequence::Percent => write!(f, "%%%"),
+            ZshSequence::Percent => write!(f, "%%"),
             ZshSequence::BoldStart => write!(f, "%B"),
             ZshSequence::BoldEnd => write!(f, "%b"),
             ZshSequence::UnderlineStart => write!(f, "%U"),
@@ -94,7 +169,7 @@ mod tests {
 
     #[test]
     fn test_percent_sequence() {
-        assert_eq!(ZshSequence::Percent.to_string(), "%%%");
+        assert_eq!(ZshSequence::Percent.to_string(), "%%");
     }
 
     #[test]
