@@ -80,40 +80,6 @@ impl NamedColor {
             }
         }
     }
-    pub fn to_bash_string(&self) -> String {
-        match self {
-            // 標準の8色 (0-7)
-            NamedColor::Black => "0".to_string(),
-            NamedColor::Red => "1".to_string(),
-            NamedColor::Green => "2".to_string(),
-            NamedColor::Yellow => "3".to_string(),
-            NamedColor::Blue => "4".to_string(),
-            NamedColor::Magenta => "5".to_string(),
-            NamedColor::Cyan => "6".to_string(),
-            NamedColor::White => "7".to_string(),
-
-            // 明るい8色 (8-15) または特定の256色コード
-            NamedColor::LightBlack => "240".to_string(), // Zshの実装に合わせて240 (Dark Gray)
-            NamedColor::LightRed => "9".to_string(),
-            NamedColor::LightGreen => "10".to_string(),
-            NamedColor::LightYellow => "11".to_string(),
-            NamedColor::LightBlue => "12".to_string(),
-            NamedColor::LightMagenta => "13".to_string(),
-            NamedColor::LightCyan => "14".to_string(),
-            NamedColor::LightWhite => "15".to_string(),
-
-            // 256色コードはそのまま
-            NamedColor::Code256(code) => code.to_string(),
-
-            // FullColorは Zsh 同様、呼び出し側で \x1b[38;2;R;G;Bm を構築するため
-            // ここで数値文字列を返すのは論理エラーとする
-            NamedColor::FullColor((_, _, _)) => {
-                panic!(
-                    "NamedColor::FullColor should be handled as an escape sequence, not converted to a Bash string directly."
-                );
-            }
-        }
-    }
 }
 
 #[cfg(test)]

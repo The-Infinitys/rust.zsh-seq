@@ -6,11 +6,8 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-home = "0.5.12"
-hostname = "0.4.2"
 regex = "1.12.2"
 unicode-width = "0.2.2"
-users = "0.11.0"
 
 [lib]
 name = "zsh_seq"
