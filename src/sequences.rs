@@ -1,4 +1,6 @@
 use crate::colors::NamedColor;
+use std::env;
+use std::fmt;
 
 /// Represents a Zsh prompt sequence.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,46 +45,108 @@ pub enum ZshSequence {
     Literal(String),
 }
 
-impl std::fmt::Display for ZshSequence {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+/// ターゲットとするシェルの種類
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShellType {
+    Zsh,
+    Bash,
+}
+
+impl ShellType {
+    /// 環境変数 SHELL から現在のシェルを判定する
+    pub fn from_env() -> Self {
+        match env::var("SHELL") {
+            Ok(s) if s.contains("bash") => ShellType::Bash,
+            _ => ShellType::Zsh, // デフォルトはzsh
+        }
+    }
+}
+
+impl ZshSequence {
+    /// Zsh用のプロンプト文字列を生成
+    pub fn zsh(&self) -> String {
         match self {
-            ZshSequence::Percent => write!(f, "%%%"),
-            ZshSequence::BoldStart => write!(f, "%B"),
-            ZshSequence::BoldEnd => write!(f, "%b"),
-            ZshSequence::UnderlineStart => write!(f, "%U"),
-            ZshSequence::UnderlineEnd => write!(f, "%u"),
-            ZshSequence::StandoutStart => write!(f, "%S"),
-            ZshSequence::StandoutEnd => write!(f, "%s"),
+            ZshSequence::Percent => "%%".to_string(),
+            ZshSequence::BoldStart => "%B".to_string(),
+            ZshSequence::BoldEnd => "%b".to_string(),
+            ZshSequence::UnderlineStart => "%U".to_string(),
+            ZshSequence::UnderlineEnd => "%u".to_string(),
+            ZshSequence::StandoutStart => "%S".to_string(),
+            ZshSequence::StandoutEnd => "%s".to_string(),
             ZshSequence::ForegroundColor(color) => match color {
-                NamedColor::FullColor((r, g, b)) => write!(f, "%{{\x1b[38;2;{};{};{}m%}}", r, g, b),
-                _ => write!(f, "%F{{{}}}", color.to_zsh_string()),
+                NamedColor::FullColor((r, g, b)) => format!("%{{\x1b[38;2;{};{};{}m%}}", r, g, b),
+                _ => format!("%F{{{}}}", color.to_zsh_string()),
             },
-            ZshSequence::ForegroundColorEnd => write!(f, "%f"),
+            ZshSequence::ForegroundColorEnd => "%f".to_string(),
             ZshSequence::BackgroundColor(color) => match color {
-                NamedColor::FullColor((r, g, b)) => write!(f, "%{{\x1b[48;2;{};{};{}m%}}", r, g, b),
-                _ => write!(f, "%K{{{}}}", color.to_zsh_string()),
+                NamedColor::FullColor((r, g, b)) => format!("%{{\x1b[48;2;{};{};{}m%}}", r, g, b),
+                _ => format!("%K{{{}}}", color.to_zsh_string()),
             },
-            ZshSequence::BackgroundColorEnd => write!(f, "%k"),
-            ZshSequence::ResetStyles => write!(f, "%{{\x1b[0m%}}"),
-            ZshSequence::Username => write!(f, "%n"),
-            ZshSequence::HostnameShort => write!(f, "%m"),
-            ZshSequence::CurrentDirectoryFull => write!(f, "%/"), // Or %d
-            ZshSequence::CurrentDirectoryTilde => write!(f, "%~"),
-            ZshSequence::PrivilegedIndicator => write!(f, "%#"),
-            ZshSequence::Newline => writeln!(f),
+            ZshSequence::BackgroundColorEnd => "%k".to_string(),
+            ZshSequence::ResetStyles => "%{\x1b[0m%}".to_string(),
+            ZshSequence::Username => "%n".to_string(),
+            ZshSequence::HostnameShort => "%m".to_string(),
+            ZshSequence::CurrentDirectoryFull => "%/".to_string(),
+            ZshSequence::CurrentDirectoryTilde => "%~".to_string(),
+            ZshSequence::PrivilegedIndicator => "%#".to_string(),
+            ZshSequence::Newline => "\n".to_string(),
             ZshSequence::Literal(s) => {
+                let mut res = String::new();
                 for c in s.chars() {
                     if c.is_ascii() {
-                        // 通常のASCII文字（英数字など）はそのまま出力
-                        write!(f, "{}", c)?;
+                        res.push(c);
                     } else {
-                        // マルチバイト文字（記号・全角文字など）のみ %{%G...%} で囲む
-                        // これにより、Zshに「この文字は見た目に関わらず1文字幅である」と教える
-                        write!(f, "%{{%G{}%}}", c)?;
+                        res.push_str(&format!("%{{%G{}%}}", c));
                     }
                 }
-                Ok(())
+                res
             }
+        }
+    }
+
+    /// Bash用のプロンプト文字列を生成
+    /// 非表示文字（ANSIエスケープなど）は \x01 と \x02 で囲む必要がある
+    pub fn bash(&self) -> String {
+        // ヘルパー：制御文字（幅ゼロ文字）をタグで囲む
+        let wrap = |content: String| format!("\x01{}\x02", content);
+
+        match self {
+            ZshSequence::Percent => "%".to_string(),
+            ZshSequence::BoldStart => wrap("\x1b[1m".to_string()),
+            ZshSequence::BoldEnd => wrap("\x1b[22m".to_string()),
+            ZshSequence::UnderlineStart => wrap("\x1b[4m".to_string()),
+            ZshSequence::UnderlineEnd => wrap("\x1b[24m".to_string()),
+            ZshSequence::StandoutStart => wrap("\x1b[7m".to_string()),
+            ZshSequence::StandoutEnd => wrap("\x1b[27m".to_string()),
+            ZshSequence::ForegroundColor(color) => match color {
+                NamedColor::FullColor((r, g, b)) => wrap(format!("\x1b[38;2;{};{};{}m", r, g, b)),
+                _ => wrap(format!("\x1b[38;5;{}m", color.to_bash_string())), // 256色用メソッドを想定
+            },
+            ZshSequence::ForegroundColorEnd | ZshSequence::ResetStyles => {
+                wrap("\x1b[0m".to_string())
+            }
+            ZshSequence::BackgroundColor(color) => match color {
+                NamedColor::FullColor((r, g, b)) => wrap(format!("\x1b[48;2;{};{};{}m", r, g, b)),
+                _ => wrap(format!("\x1b[48;5;{}m", color.to_bash_string())),
+            },
+            ZshSequence::BackgroundColorEnd => wrap("\x1b[49m".to_string()),
+            ZshSequence::Username => "\\u".to_string(),
+            ZshSequence::HostnameShort => "\\h".to_string(),
+            ZshSequence::CurrentDirectoryFull => "\\w".to_string(), // Bashは基本 \w か \W
+            ZshSequence::CurrentDirectoryTilde => "\\w".to_string(),
+            ZshSequence::PrivilegedIndicator => "\\$".to_string(),
+            ZshSequence::Newline => "\n".to_string(),
+            ZshSequence::Literal(s) => s.clone(),
+        }
+    }
+}
+
+impl fmt::Display for ZshSequence {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let shell = ShellType::from_env();
+        match shell {
+            ShellType::Zsh => write!(f, "{}", self.zsh()),
+            ShellType::Bash => write!(f, "{}", self.bash()),
         }
     }
 }
@@ -94,7 +158,7 @@ mod tests {
 
     #[test]
     fn test_percent_sequence() {
-        assert_eq!(ZshSequence::Percent.to_string(), "%%%");
+        assert_eq!(ZshSequence::Percent.to_string(), "%%");
     }
 
     #[test]

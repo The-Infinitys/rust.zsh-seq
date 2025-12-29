@@ -160,6 +160,9 @@ impl ZshPromptBuilder {
         let s = re.replace_all(&raw, "");
         UnicodeWidthStr::width(s.as_ref())
     }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 #[cfg(test)]
