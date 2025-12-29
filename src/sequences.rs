@@ -1,7 +1,6 @@
 use crate::colors::NamedColor;
 use std::env;
 use std::fmt;
-
 /// Represents a Zsh prompt sequence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ZshSequence {
@@ -135,6 +134,66 @@ impl ZshSequence {
             ZshSequence::CurrentDirectoryFull => "\\w".to_string(), // Bashは基本 \w か \W
             ZshSequence::CurrentDirectoryTilde => "\\w".to_string(),
             ZshSequence::PrivilegedIndicator => "\\$".to_string(),
+            ZshSequence::Newline => "\n".to_string(),
+            ZshSequence::Literal(s) => s.clone(),
+        }
+    }
+    pub fn raw(&self) -> String {
+        match self {
+            ZshSequence::Percent => "%".to_string(),
+            ZshSequence::BoldStart => "\x1b[1m".to_string(),
+            ZshSequence::BoldEnd => "\x1b[22m".to_string(),
+            ZshSequence::UnderlineStart => "\x1b[4m".to_string(),
+            ZshSequence::UnderlineEnd => "\x1b[24m".to_string(),
+            ZshSequence::StandoutStart => "\x1b[7m".to_string(),
+            ZshSequence::StandoutEnd => "\x1b[27m".to_string(),
+            ZshSequence::ForegroundColor(color) => match color {
+                NamedColor::FullColor((r, g, b)) => format!("\x1b[38;2;{};{};{}m", r, g, b),
+                _ => format!("\x1b[38;5;{}m", color.to_bash_string()),
+            },
+            ZshSequence::ForegroundColorEnd | ZshSequence::ResetStyles => "\x1b[0m".to_string(),
+            ZshSequence::BackgroundColor(color) => match color {
+                NamedColor::FullColor((r, g, b)) => format!("\x1b[48;2;{};{};{}m", r, g, b),
+                _ => format!("\x1b[48;5;{}m", color.to_bash_string()),
+            },
+            ZshSequence::BackgroundColorEnd => "\x1b[49m".to_string(),
+
+            // --- クレートを使用した情報取得 ---
+            ZshSequence::Username => users::get_current_username()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "user".to_string()),
+            ZshSequence::HostnameShort => hostname::get()
+                .map(|h| h.to_string_lossy().into_owned())
+                .unwrap_or_else(|_| "host".to_string())
+                .split('.')
+                .next()
+                .unwrap_or("host")
+                .to_string(),
+            ZshSequence::CurrentDirectoryFull => env::current_dir()
+                .map(|p| p.to_string_lossy().into_owned())
+                .unwrap_or_else(|_| "/".to_string()),
+            ZshSequence::CurrentDirectoryTilde => {
+                let cwd = env::current_dir()
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .unwrap_or_default();
+                let home_path = home::home_dir()
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .unwrap_or_default();
+
+                if !home_path.is_empty() && cwd.starts_with(&home_path) {
+                    cwd.replacen(&home_path, "~", 1)
+                } else {
+                    cwd
+                }
+            }
+            ZshSequence::PrivilegedIndicator => {
+                // uzers を使用して UID 0 (root) かチェック
+                if users::get_current_uid() == 0 {
+                    "#".to_string()
+                } else {
+                    "$".to_string()
+                }
+            }
             ZshSequence::Newline => "\n".to_string(),
             ZshSequence::Literal(s) => s.clone(),
         }
