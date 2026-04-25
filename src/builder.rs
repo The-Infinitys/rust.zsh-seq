@@ -220,7 +220,10 @@ mod tests {
             .current_dir_full()
             .end_bold()
             .build();
-        assert_eq!(prompt, "%{%F{red}%}ERROR: %{%f%}%{%B%}Something went wrong at %/%{%b%}");
+        assert_eq!(
+            prompt,
+            "%{%F{red}%}ERROR: %{%f%}%{%B%}Something went wrong at %/%{%b%}"
+        );
     }
 
     #[test]
