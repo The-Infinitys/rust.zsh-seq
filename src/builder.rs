@@ -206,7 +206,7 @@ mod tests {
             .end_bold()
             .current_dir_tilde()
             .build();
-        assert_eq!(prompt, "%B%F{green}Success: %f%b%~");
+        assert_eq!(prompt, "%{%B%}%{%F{green}%}Success: %{%f%}%{%b%}%~");
     }
 
     #[test]
@@ -220,7 +220,7 @@ mod tests {
             .current_dir_full()
             .end_bold()
             .build();
-        assert_eq!(prompt, "%F{red}ERROR: %f%BSomething went wrong at %/%b");
+        assert_eq!(prompt, "%{%F{red}%}ERROR: %{%f%}%{%B%}Something went wrong at %/%{%b%}");
     }
 
     #[test]
@@ -287,7 +287,7 @@ mod tests {
             .connect(part3)
             .build();
 
-        // 期待される出力: %F{blue}[%f%n@%m%F{blue}]%f
-        assert_eq!(prompt, "%F{blue}[%f%n@%m%F{blue}]%f");
+        // 期待される出力: %{%F{blue}%}[%{%f%}%n@%m%{%F{blue}%}]%{%f%}
+        assert_eq!(prompt, "%{%F{blue}%}[%{%f%}%n@%m%{%F{blue}%}]%{%f%}");
     }
 }

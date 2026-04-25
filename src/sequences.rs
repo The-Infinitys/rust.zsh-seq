@@ -148,22 +148,22 @@ impl std::fmt::Display for ZshSequence {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ZshSequence::Percent => write!(f, "%%"),
-            ZshSequence::BoldStart => write!(f, "%B"),
-            ZshSequence::BoldEnd => write!(f, "%b"),
-            ZshSequence::UnderlineStart => write!(f, "%U"),
-            ZshSequence::UnderlineEnd => write!(f, "%u"),
-            ZshSequence::StandoutStart => write!(f, "%S"),
-            ZshSequence::StandoutEnd => write!(f, "%s"),
+            ZshSequence::BoldStart => write!(f, "%{{%B%}}"),
+            ZshSequence::BoldEnd => write!(f, "%{{%b%}}"),
+            ZshSequence::UnderlineStart => write!(f, "%{{%U%}}"),
+            ZshSequence::UnderlineEnd => write!(f, "%{{%u%}}"),
+            ZshSequence::StandoutStart => write!(f, "%{{%S%}}"),
+            ZshSequence::StandoutEnd => write!(f, "%{{%s%}}"),
             ZshSequence::ForegroundColor(color) => match color {
                 NamedColor::FullColor((r, g, b)) => write!(f, "%{{\x1b[38;2;{};{};{}m%}}", r, g, b),
-                _ => write!(f, "%F{{{}}}", color.to_zsh_string()),
+                _ => write!(f, "%{{%F{{{}}}%}}", color.to_zsh_string()),
             },
-            ZshSequence::ForegroundColorEnd => write!(f, "%f"),
+            ZshSequence::ForegroundColorEnd => write!(f, "%{{%f%}}"),
             ZshSequence::BackgroundColor(color) => match color {
                 NamedColor::FullColor((r, g, b)) => write!(f, "%{{\x1b[48;2;{};{};{}m%}}", r, g, b),
-                _ => write!(f, "%K{{{}}}", color.to_zsh_string()),
+                _ => write!(f, "%{{%K{{{}}}%}}", color.to_zsh_string()),
             },
-            ZshSequence::BackgroundColorEnd => write!(f, "%k"),
+            ZshSequence::BackgroundColorEnd => write!(f, "%{{%k%}}"),
             ZshSequence::ResetStyles => write!(f, "%{{\x1b[0m%}}"),
             ZshSequence::Username => write!(f, "%n"),
             ZshSequence::HostnameShort => write!(f, "%m"),
@@ -173,12 +173,11 @@ impl std::fmt::Display for ZshSequence {
             ZshSequence::Newline => writeln!(f),
             ZshSequence::Literal(s) => {
                 for c in s.chars() {
-                    if c.is_ascii() {
-                        // 通常のASCII文字（英数字など）はそのまま出力
+                    if c == '%' {
+                        write!(f, "%%")?;
+                    } else if c.is_ascii() {
                         write!(f, "{}", c)?;
                     } else {
-                        // マルチバイト文字（記号・全角文字など）のみ %{%G...%} で囲む
-                        // これにより、Zshに「この文字は見た目に関わらず1文字幅である」と教える
                         write!(f, "%{{%G{}%}}", c)?;
                     }
                 }
@@ -200,40 +199,40 @@ mod tests {
 
     #[test]
     fn test_bold_sequences() {
-        assert_eq!(ZshSequence::BoldStart.to_string(), "%B");
-        assert_eq!(ZshSequence::BoldEnd.to_string(), "%b");
+        assert_eq!(ZshSequence::BoldStart.to_string(), "%{%B%}");
+        assert_eq!(ZshSequence::BoldEnd.to_string(), "%{%b%}");
     }
 
     #[test]
     fn test_underline_sequences() {
-        assert_eq!(ZshSequence::UnderlineStart.to_string(), "%U");
-        assert_eq!(ZshSequence::UnderlineEnd.to_string(), "%u");
+        assert_eq!(ZshSequence::UnderlineStart.to_string(), "%{%U%}");
+        assert_eq!(ZshSequence::UnderlineEnd.to_string(), "%{%u%}");
     }
 
     #[test]
     fn test_foreground_color_sequence() {
         assert_eq!(
             ZshSequence::ForegroundColor(NamedColor::Red).to_string(),
-            "%F{red}"
+            "%{%F{red}%}"
         );
         assert_eq!(
             ZshSequence::ForegroundColor(NamedColor::Code256(123)).to_string(),
-            "%F{123}"
+            "%{%F{123}%}"
         );
-        assert_eq!(ZshSequence::ForegroundColorEnd.to_string(), "%f");
+        assert_eq!(ZshSequence::ForegroundColorEnd.to_string(), "%{%f%}");
     }
 
     #[test]
     fn test_background_color_sequence() {
         assert_eq!(
             ZshSequence::BackgroundColor(NamedColor::Blue).to_string(),
-            "%K{blue}"
+            "%{%K{blue}%}"
         );
         assert_eq!(
             ZshSequence::BackgroundColor(NamedColor::Code256(200)).to_string(),
-            "%K{200}"
+            "%{%K{200}%}"
         );
-        assert_eq!(ZshSequence::BackgroundColorEnd.to_string(), "%k");
+        assert_eq!(ZshSequence::BackgroundColorEnd.to_string(), "%{%k%}");
     }
 
     #[test]
@@ -271,6 +270,16 @@ mod tests {
         assert_eq!(
             ZshSequence::Literal("hello".to_string()).to_string(),
             "hello"
+        );
+        // Test percent escaping in literal
+        assert_eq!(
+            ZshSequence::Literal("100%".to_string()).to_string(),
+            "100%%"
+        );
+        // Test multibyte wrapping
+        assert_eq!(
+            ZshSequence::Literal("あ".to_string()).to_string(),
+            "%{%Gあ%}"
         );
     }
 }
